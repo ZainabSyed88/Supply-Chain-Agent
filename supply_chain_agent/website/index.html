@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChainPulse - Supply Chain Intelligence Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-content">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <span>ChainPulse</span>
+                </div>
+                <div class="nav-menu">
+                    <a href="#features" class="nav-link">Features</a>
+                    <a href="#agents" class="nav-link">Agents</a>
+                    <a href="#capabilities" class="nav-link">Capabilities</a>
+                    <a href="#contact" class="nav-link">Contact</a>
+                    <button class="btn btn-primary" onclick="openDemo()">Demo</button>
+                </div>
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Orchestrating Resilience in Global Supply Chains</h1>
+                <p class="hero-subtitle">AI-powered multi-agent system to detect, prevent, and mitigate supply chain disruptions in real-time</p>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary-large" onclick="openDemo()">Start Free Trial</button>
+                    <button class="btn btn-secondary-large" onclick="scrollToSection('capabilities')">Learn More</button>
+                </div>
+            </div>
+            <div class="hero-visualization">
+                <div class="animated-bg"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- KPI Cards -->
+    <section class="kpi-section">
+        <div class="container">
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-number">1248</div>
+                    <div class="kpi-label">Supply Chains Monitored</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-number">1K+</div>
+                    <div class="kpi-label">Active Agents</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-number">1K+</div>
+                    <div class="kpi-label">Disruptions Prevented</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-number">450+</div>
+                    <div class="kpi-label">Hrs Saved Monthly</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5-Agent Intelligence Layer -->
+    <section id="agents" class="agents-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>5-Agent Intelligence Layer</h2>
+                <p>Each specialized agent handles critical supply chain functions with autonomous decision-making</p>
+            </div>
+            <div class="agents-grid">
+                <div class="agent-card">
+                    <div class="agent-icon">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <h3>Supplier Health Monitor</h3>
+                    <p>Real-time monitoring of supplier performance, reliability, and risk scores</p>
+                    <ul>
+                        <li>On-time delivery tracking</li>
+                        <li>Risk assessment</li>
+                        <li>Performance alerts</li>
+                    </ul>
+                </div>
+
+                <div class="agent-card">
+                    <div class="agent-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h3>Disruption Detector</h3>
+                    <p>Identifies and categorizes supply chain disruptions automatically</p>
+                    <ul>
+                        <li>Real-time event detection</li>
+                        <li>Impact assessment</li>
+                        <li>Severity classification</li>
+                    </ul>
+                </div>
+
+                <div class="agent-card">
+                    <div class="agent-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Demand Forecaster</h3>
+                    <p>7-day demand prediction with spike detection and trend analysis</p>
+                    <ul>
+                        <li>Predictive analytics</li>
+                        <li>Growth forecasting</li>
+                        <li>Anomaly detection</li>
+                    </ul>
+                </div>
+
+                <div class="agent-card">
+                    <div class="agent-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3>Risk Assessment</h3>
+                    <p>Comprehensive business impact analysis and risk scoring</p>
+                    <ul>
+                        <li>Impact calculation</li>
+                        <li>Risk prioritization</li>
+                        <li>Financial exposure</li>
+                    </ul>
+                </div>
+
+                <div class="agent-card">
+                    <div class="agent-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h3>Mitigation Agent</h3>
+                    <p>Autonomous recommendations for disruption mitigation</p>
+                    <ul>
+                        <li>Solution generation</li>
+                        <li>Cost-benefit analysis</li>
+                        <li>Alternative sourcing</li>
+                    </ul>
+                </div>
+
+                <div class="agent-card">
+                    <div class="agent-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3>Stakeholder Notification</h3>
+                    <p>Targeted alerts and communications for all stakeholders</p>
+                    <ul>
+                        <li>Smart notifications</li>
+                        <li>Role-based alerts</li>
+                        <li>Action items</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Orchestrator Chat -->
+    <section class="chat-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Orchestrator Chat Interface</h2>
+                <p>Natural language Q&A for instant supply chain insights</p>
+            </div>
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message bot-message">
+                        <div class="message-content">
+                            <p>Hi! I'm the ChainPulse Orchestrator. Ask me anything about your supply chain.</p>
+                            <div class="suggested-questions">
+                                <button onclick="sendQuestion('Which suppliers are highest risk?')" class="suggestion-btn">Which suppliers are highest risk?</button>
+                                <button onclick="sendQuestion('What revenue is at risk?')" class="suggestion-btn">What revenue is at risk?</button>
+                                <button onclick="sendQuestion('What is the demand forecast?')" class="suggestion-btn">What is the demand forecast?</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="chatInput" placeholder="Ask a question..." onkeypress="handleChatKeypress(event)">
+                    <button class="btn btn-primary" onclick="sendQuestion()">Send</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Advanced Capabilities -->
+    <section id="capabilities" class="capabilities-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Advanced System Capabilities</h2>
+                <p>Enterprise-grade features for complete supply chain intelligence</p>
+            </div>
+            <div class="capabilities-grid">
+                <div class="capability-card">
+                    <div class="capability-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Crisis War Room</h3>
+                    <p>Automated incident management with real-time collaboration and escalation protocols</p>
+                </div>
+
+                <div class="capability-card">
+                    <div class="capability-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>Self-Healing Agent</h3>
+                    <p>Autonomous execution of mitigation actions with audit trails</p>
+                </div>
+
+                <div class="capability-card">
+                    <div class="capability-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3>Explainable AI</h3>
+                    <p>Transparent reasoning for every recommendation and decision</p>
+                </div>
+
+                <div class="capability-card">
+                    <div class="capability-icon">
+                        <i class="fas fa-laptop"></i>
+                    </div>
+                    <h3>Executive Dashboard</h3>
+                    <p>VP-level strategic insights and KPI tracking</p>
+                </div>
+
+                <div class="capability-card">
+                    <div class="capability-icon">
+                        <i class="fas fa-simulation"></i>
+                    </div>
+                    <h3>Digital Twin</h3>
+                    <p>What-if scenario simulation for proactive planning</p>
+                </div>
+
+                <div class="capability-card">
+                    <div class="capability-icon">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                    <h3>Sustainability Tracking</h3>
+                    <p>ESG analysis and carbon footprint optimization</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- World Map Visualization -->
+    <section class="visualization-section">
+        <div class="container">
+            <div class="viz-content">
+                <div class="viz-text">
+                    <h2>Real-Time Global Monitoring</h2>
+                    <p>Monitor supply chains across all continents with our advanced geospatial analytics.</p>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check"></i> 24/7 global monitoring</li>
+                        <li><i class="fas fa-check"></i> Regional disruption detection</li>
+                        <li><i class="fas fa-check"></i> Port & logistics hub tracking</li>
+                        <li><i class="fas fa-check"></i> Weather & event integration</li>
+                    </ul>
+                </div>
+                <div class="viz-map">
+                    <div class="world-map">
+                        <svg viewBox="0 0 1000 600" class="map-svg">
+                            <rect width="1000" height="600" fill="#0f172a"/>
+                            <circle cx="200" cy="250" r="8" fill="#10b981" class="location-dot"/>
+                            <circle cx="500" cy="180" r="8" fill="#10b981" class="location-dot"/>
+                            <circle cx="700" cy="300" r="8" fill="#ef4444" class="location-dot"/>
+                            <circle cx="350" cy="400" r="8" fill="#10b981" class="location-dot"/>
+                            <circle cx="800" cy="450" r="8" fill="#f59e0b" class="location-dot"/>
+                            <!-- Connection lines -->
+                            <line x1="200" y1="250" x2="500" y2="180" stroke="#3b82f6" stroke-width="2" opacity="0.5"/>
+                            <line x1="500" y1="180" x2="700" y2="300" stroke="#3b82f6" stroke-width="2" opacity="0.5"/>
+                            <line x1="350" y1="400" x2="800" y2="450" stroke="#3b82f6" stroke-width="2" opacity="0.5"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-number">2-3</div>
+                    <div class="stat-label">Minutes to Deploy</div>
+                </div>
+                <div class="stat-item verified">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="stat-label">Fully Validated</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">&lt;3%</div>
+                    <div class="stat-label">False Positive Rate</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <div class="container">
+            <div class="section-header">
+                <h2>Why Choose ChainPulse?</h2>
+                <p>Industry-leading supply chain intelligence</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-number">1</div>
+                    <h3>Multi-Agent Architecture</h3>
+                    <p>15+ specialized AI agents working in concert for comprehensive analysis</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-number">2</div>
+                    <h3>Autonomous Execution</h3>
+                    <p>Self-healing actions that execute mitigation strategies automatically</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-number">3</div>
+                    <h3>Real-Time Intelligence</h3>
+                    <p>Instant disruption detection and impact assessment</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-number">4</div>
+                    <h3>Explainable Decisions</h3>
+                    <p>Transparent AI that shows all reasoning and confidence scores</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-number">5</div>
+                    <h3>Integration Ready</h3>
+                    <p>Connect to ERP, WMS, TMS, and any data source</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-number">6</div>
+                    <h3>Enterprise Security</h3>
+                    <p>SOC 2 compliant with encryption and audit trails</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2>Ready to Build a Smarter, Faster Supply Chain?</h2>
+            <p>Join 1000+ companies transforming their supply chain resilience</p>
+            <div class="cta-buttons">
+                <button class="btn btn-primary-large" onclick="openDemo()">Get Started Free</button>
+                <button class="btn btn-secondary-large" onclick="scrollToSection('contact')">Schedule Demo</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section">
+        <div class="container">
+            <div class="contact-content">
+                <div class="contact-form">
+                    <h2>Get in Touch</h2>
+                    <form onsubmit="handleContactSubmit(event)">
+                        <div class="form-group">
+                            <input type="text" placeholder="Your Name" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="email" placeholder="Your Email" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" placeholder="Company">
+                        </div>
+                        <div class="form-group">
+                            <textarea placeholder="Message" rows="4"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Send Message</button>
+                    </form>
+                </div>
+                <div class="contact-info">
+                    <h3>Contact Information</h3>
+                    <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <strong>Address</strong>
+                            <p>San Francisco, CA 94105</p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-phone"></i>
+                        <div>
+                            <strong>Phone</strong>
+                            <p>+1 (555) 123-4567</p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <strong>Email</strong>
+                            <p>info@chainpulse.io</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>ChainPulse</h4>
+                    <p>AI-powered supply chain resilience platform</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Product</h4>
+                    <a href="#features">Features</a>
+                    <a href="#agents">Agents</a>
+                    <a href="#capabilities">Capabilities</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Company</h4>
+                    <a href="#contact">Contact</a>
+                    <a href="#">About</a>
+                    <a href="#">Blog</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Legal</h4>
+                    <a href="#">Privacy</a>
+                    <a href="#">Terms</a>
+                    <a href="#">Security</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 ChainPulse. All rights reserved.</p>
+                <div class="social-links">
+                    <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" title="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                    <a href="#" title="GitHub"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Demo Modal -->
+    <div id="demoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDemo()">&times;</span>
+            <h2>ChainPulse Interactive Demo</h2>
+            <div class="demo-tabs">
+                <button class="demo-tab-btn active" onclick="switchDemoTab('supply')">Supply Chain</button>
+                <button class="demo-tab-btn" onclick="switchDemoTab('disruption')">Disruption</button>
+                <button class="demo-tab-btn" onclick="switchDemoTab('mitigation')">Mitigation</button>
+            </div>
+            <div id="supply" class="demo-tab active">
+                <h3>Current Supply Chain Status</h3>
+                <table class="demo-table">
+                    <tr>
+                        <th>Supplier ID</th>
+                        <th>Name</th>
+                        <th>On-Time Rate</th>
+                        <th>Risk Score</th>
+                        <th>Status</th>
+                    </tr>
+                    <tr>
+                        <td>SUP001</td>
+                        <td>Global Parts Inc</td>
+                        <td>92%</td>
+                        <td>0.3</td>
+                        <td><span class="status-active">Active</span></td>
+                    </tr>
+                    <tr>
+                        <td>SUP002</td>
+                        <td>EuroLogistics Ltd</td>
+                        <td>88%</td>
+                        <td>0.5</td>
+                        <td><span class="status-active">Active</span></td>
+                    </tr>
+                    <tr>
+                        <td>SUP003</td>
+                        <td>TechComps USA</td>
+                        <td>95%</td>
+                        <td>0.2</td>
+                        <td><span class="status-active">Active</span></td>
+                    </tr>
+                </table>
+            </div>
+            <div id="disruption" class="demo-tab">
+                <h3>Active Disruptions</h3>
+                <div class="disruption-item">
+                    <strong>Port Strike - Rotterdam</strong>
+                    <p>Delay: 48 hours | Impact: High</p>
+                    <p>Affected Suppliers: EuroLogistics Ltd</p>
+                </div>
+                <div class="disruption-item">
+                    <strong>Weather Event - Shanghai Route</strong>
+                    <p>Delay: 24 hours | Impact: Medium</p>
+                    <p>Affected Suppliers: Global Parts Inc</p>
+                </div>
+            </div>
+            <div id="mitigation" class="demo-tab">
+                <h3>Recommended Mitigations</h3>
+                <div class="mitigation-item">
+                    <strong>Route Alternative</strong>
+                    <p>Reroute via alternate port</p>
+                    <p>Cost Impact: +5% | Time Gain: 12 hours</p>
+                </div>
+                <div class="mitigation-item">
+                    <strong>Supplier Diversification</strong>
+                    <p>Engage TechComps USA as backup</p>
+                    <p>Cost Impact: +2% | Reliability: +8%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

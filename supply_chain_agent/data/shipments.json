@@ -1,0 +1,48 @@
+{
+  "shipments": [
+    {
+      "id": "SHIP001",
+      "supplier_id": "SUP001",
+      "origin": "Shanghai, China",
+      "destination": "New York, USA",
+      "value": 75000,
+      "status": "in_transit",
+      "expected_delivery": "2026-06-20",
+      "priority": "high",
+      "contents": "Electronic components"
+    },
+    {
+      "id": "SHIP002",
+      "supplier_id": "SUP002",
+      "origin": "Rotterdam, Netherlands",
+      "destination": "Chicago, USA",
+      "value": 45000,
+      "status": "in_transit",
+      "expected_delivery": "2026-06-18",
+      "priority": "medium",
+      "contents": "Packaging materials"
+    },
+    {
+      "id": "SHIP003",
+      "supplier_id": "SUP003",
+      "origin": "Silicon Valley, USA",
+      "destination": "Denver, USA",
+      "value": 120000,
+      "status": "in_transit",
+      "expected_delivery": "2026-06-16",
+      "priority": "critical",
+      "contents": "CPU processors"
+    },
+    {
+      "id": "SHIP004",
+      "supplier_id": "SUP004",
+      "origin": "Bangalore, India",
+      "destination": "London, UK",
+      "value": 55000,
+      "status": "in_transit",
+      "expected_delivery": "2026-06-25",
+      "priority": "medium",
+      "contents": "Software services"
+    }
+  ]
+}

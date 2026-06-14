@@ -1,0 +1,40 @@
+{
+  "suppliers": [
+    {
+      "id": "SUP001",
+      "name": "Global Parts Inc",
+      "location": "Shanghai, China",
+      "on_time_rate": 0.92,
+      "risk_score": 0.3,
+      "last_delay_hours": 12,
+      "status": "active"
+    },
+    {
+      "id": "SUP002",
+      "name": "EuroLogistics Ltd",
+      "location": "Rotterdam, Netherlands",
+      "on_time_rate": 0.88,
+      "risk_score": 0.5,
+      "last_delay_hours": 48,
+      "status": "active"
+    },
+    {
+      "id": "SUP003",
+      "name": "TechComps USA",
+      "location": "Silicon Valley, USA",
+      "on_time_rate": 0.95,
+      "risk_score": 0.2,
+      "last_delay_hours": 6,
+      "status": "active"
+    },
+    {
+      "id": "SUP004",
+      "name": "IndiaManufacturing Co",
+      "location": "Bangalore, India",
+      "on_time_rate": 0.85,
+      "risk_score": 0.6,
+      "last_delay_hours": 72,
+      "status": "active"
+    }
+  ]
+}

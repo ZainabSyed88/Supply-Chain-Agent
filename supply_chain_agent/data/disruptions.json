@@ -1,0 +1,34 @@
+{
+  "active_disruptions": [
+    {
+      "id": "DIS001",
+      "type": "weather",
+      "location": "South China Sea",
+      "severity": "high",
+      "description": "Typhoon approaching shipping lanes",
+      "affected_suppliers": ["SUP001"],
+      "estimated_delay_hours": 48,
+      "timestamp": "2026-06-14T10:00:00Z"
+    },
+    {
+      "id": "DIS002",
+      "type": "strike",
+      "location": "Rotterdam Port",
+      "severity": "medium",
+      "description": "Port workers strike - limited operations",
+      "affected_suppliers": ["SUP002"],
+      "estimated_delay_hours": 24,
+      "timestamp": "2026-06-14T08:30:00Z"
+    },
+    {
+      "id": "DIS003",
+      "type": "traffic",
+      "location": "US Interstate 80",
+      "severity": "low",
+      "description": "Road construction delays",
+      "affected_suppliers": ["SUP003"],
+      "estimated_delay_hours": 6,
+      "timestamp": "2026-06-14T12:00:00Z"
+    }
+  ]
+}
