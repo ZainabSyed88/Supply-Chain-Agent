@@ -132,33 +132,8 @@ function addBotMessage(message) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-function getAIResponse(question) {
-    const lowerQuestion = question.toLowerCase();
-    
-    // Check for exact or partial matches in QA database
-    for (const [key, value] of Object.entries(qaDatabase)) {
-        if (lowerQuestion.includes(key.toLowerCase().substring(0, 10))) {
-            return value.response;
-        }
-    }
-    
-    // Default responses based on keywords
-    if (lowerQuestion.includes('supplier')) {
-        return 'Our supplier monitoring system tracks 4 active suppliers. Currently, EuroLogistics Ltd shows elevated risk due to recent port disruptions. TechComps USA maintains the highest reliability score.';
-    } else if (lowerQuestion.includes('disruption')) {
-        return 'We have detected 3 active disruptions: Rotterdam port strike (48-hour delay), Shanghai weather event (24-hour impact), and inventory shortage alerts. All mitigation strategies have been recommended.';
-    } else if (lowerQuestion.includes('cost') || lowerQuestion.includes('financial')) {
-        return 'Total financial exposure: $2.3M across 4 shipments. Estimated mitigation cost: $120K (5% of total exposure). ROI on mitigation actions: 18:1 based on historical data.';
-    } else if (lowerQuestion.includes('forecast')) {
-        return '7-day demand forecast shows 22% increase with peak on Day 4-5. Inventory levels are critical for 3 SKUs. Recommend expediting shipments to meet demand surge.';
-    } else if (lowerQuestion.includes('route') || lowerQuestion.includes('logistics')) {
-        return 'Alternative routing analysis suggests 4 viable options for Rotterdam disruption. Fastest alternative adds 12 hours but avoids 48-hour port delay. Cost increase: 5%, time savings: 36 hours.';
-    } else if (lowerQuestion.includes('customer')) {
-        return 'Customer impact analysis: 3 customers at risk due to current disruptions. Churn risk ranges from 5-25%. Recommended proactive communications sent to all affected accounts.';
-    } else {
-        return 'I\'m here to help! You can ask me about suppliers, disruptions, costs, forecasts, routes, customers, or any aspect of your supply chain. What would you like to know?';
-    }
-}
+// getAIResponse is now defined in index.html as an async function
+// This function definition has been removed to avoid conflicts
 
 function handleChatKeypress(event) {
     if (event.key === 'Enter') {

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Map - ChainPulse</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Apply dark mode immediately -->
+    <script>
+        const theme = localStorage.getItem('theme') || 'dark';
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark-mode-init');
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f1419;
+            color: white;
+            overflow: hidden;
+        }
+
+        .global-map-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .map-sidebar {
+            width: 300px;
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f2340 100%);
+            border-right: 1px solid rgba(14, 165, 233, 0.2);
+            padding: 24px 16px;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 32px;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            color: #0ea5e9;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        .metric-item {
+            background: rgba(14, 165, 233, 0.1);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0ea5e9;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 4px;
+        }
+
+        .alert-item {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid #ef4444;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-size: 12px;
+        }
+
+        .alert-title {
+            color: #ef4444;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .alert-desc {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .map-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .map-header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f2340 100%);
+            border-bottom: 1px solid rgba(14, 165, 233, 0.2);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .map-title {
+            font-size: 24px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .map-title i {
+            color: #0ea5e9;
+        }
+
+        .map-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .control-btn {
+            background: rgba(14, 165, 233, 0.1);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            color: #0ea5e9;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: rgba(14, 165, 233, 0.2);
+            border-color: rgba(14, 165, 233, 0.5);
+        }
+
+        .control-btn.active {
+            background: #0ea5e9;
+            color: white;
+        }
+
+        .map-canvas {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(ellipse at 40% 40%, #1a2f4a 0%, #0a1419 100%);
+            overflow: hidden;
+        }
+
+        .world-map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-country {
+            fill: rgba(14, 165, 233, 0.1);
+            stroke: rgba(14, 165, 233, 0.2);
+            stroke-width: 1;
+            transition: all 0.3s;
+        }
+
+        .map-country:hover {
+            fill: rgba(14, 165, 233, 0.2);
+        }
+
+        .shipment-marker {
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .port-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #fbbf24;
+            text-anchor: middle;
+        }
+
+        .risk-zone {
+            fill: rgba(239, 68, 68, 0.2);
+            stroke: #ef4444;
+            stroke-width: 2;
+            stroke-dasharray: 5,5;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .legend-high { background: #ef4444; }
+        .legend-medium { background: #f59e0b; }
+        .legend-low { background: #10b981; }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(14, 165, 233, 0.1);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            color: #0ea5e9;
+            padding: 10px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .back-btn:hover {
+            background: rgba(14, 165, 233, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="map-sidebar">
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back</a>
+            <button id="themeToggle" class="theme-toggle-dashboard" onclick="toggleTheme()" title="Toggle dark/light mode" style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); color: #0ea5e9; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 16px;">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+
+        <div class="sidebar-section" style="margin-top: 60px;">
+            <div class="sidebar-title">Live Metrics</div>
+            <div class="metric-item">
+                <div class="metric-value">4,812</div>
+                <div class="metric-label">Active Shipments</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">34.2%</div>
+                <div class="metric-label">Port Congestion Avg</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">127</div>
+                <div class="metric-label">Risk Alerts Active</div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Critical Alerts</div>
+            <div class="alert-item">
+                <div class="alert-title">🌪️ Weather System</div>
+                <div class="alert-desc">Malacca Strait - 6-hour delay for tier-1 carriers</div>
+            </div>
+            <div class="alert-item">
+                <div class="alert-title">🚢 Port Disruption</div>
+                <div class="alert-desc">Rotterdam (NL) - Labor protocol, throughput -40%</div>
+            </div>
+            <div class="alert-item">
+                <div class="alert-title">📊 Risk Spike</div>
+                <div class="alert-desc">South China Sea - Re-routing recommended</div>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Top Disruptions</div>
+            <div class="alert-item" style="border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.1);">
+                <div class="alert-title" style="color: #f59e0b;">Weather: 34 events</div>
+            </div>
+            <div class="alert-item" style="border-left-color: #0ea5e9; background: rgba(14, 165, 233, 0.1);">
+                <div class="alert-title" style="color: #0ea5e9;">Delays: 28 events</div>
+            </div>
+            <div class="alert-item" style="border-left-color: #10b981; background: rgba(16, 185, 129, 0.1);">
+                <div class="alert-title" style="color: #10b981;">Resolved: 156 events</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Content -->
+    <div class="map-content">
+        <!-- Header -->
+        <div class="map-header">
+            <div class="map-title">
+                <i class="fas fa-globe"></i>
+                Global Logistics Core
+            </div>
+            <div class="map-controls">
+                <button class="control-btn" onclick="switchMapView('shipment')">🚢 Shipments</button>
+                <button class="control-btn active" onclick="switchMapView('weather')">⛅ Weather</button>
+                <button class="control-btn" onclick="switchMapView('agents')">🤖 Agents</button>
+            </div>
+        </div>
+
+        <!-- Map Canvas -->
+        <div class="map-canvas">
+            <svg class="world-map" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                    <radialGradient id="shipmentGlow" cx="50%" cy="50%">
+                        <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:0.8" />
+                        <stop offset="100%" style="stop-color:#0ea5e9;stop-opacity:0" />
+                    </radialGradient>
+                </defs>
+
+                <!-- Land regions (simplified world map) -->
+                <rect class="map-country" x="50" y="100" width="150" height="100"/>
+                <rect class="map-country" x="250" y="80" width="180" height="120"/>
+                <rect class="map-country" x="500" y="120" width="140" height="100"/>
+                <rect class="map-country" x="700" y="150" width="120" height="90"/>
+                <rect class="map-country" x="100" y="280" width="160" height="140"/>
+                <rect class="map-country" x="320" y="300" width="110" height="130"/>
+                <rect class="map-country" x="550" y="320" width="130" height="120"/>
+                <rect class="map-country" x="150" y="450" width="200" height="100"/>
+                <rect class="map-country" x="450" y="420" width="150" height="130"/>
+
+                <!-- Risk zones -->
+                <circle class="risk-zone" cx="200" cy="250" r="60"/>
+                <circle class="risk-zone" cx="650" cy="200" r="50"/>
+
+                <!-- Shipment markers -->
+                <circle class="shipment-marker" cx="150" cy="150" r="8" fill="url(#shipmentGlow)" stroke="#0ea5e9" stroke-width="2"/>
+                <circle class="shipment-marker" cx="350" cy="100" r="8" fill="url(#shipmentGlow)" stroke="#0ea5e9" stroke-width="2"/>
+                <circle class="shipment-marker" cx="550" cy="180" r="8" fill="url(#shipmentGlow)" stroke="#0ea5e9" stroke-width="2"/>
+                <circle class="shipment-marker" cx="750" cy="120" r="8" fill="url(#shipmentGlow)" stroke="#0ea5e9" stroke-width="2"/>
+                <circle class="shipment-marker" cx="200" cy="350" r="8" fill="url(#shipmentGlow)" stroke="#0ea5e9" stroke-width="2"/>
+                <circle class="shipment-marker" cx="400" cy="320" r="8" fill="url(#shipmentGlow)" stroke="#0ea5e9" stroke-width="2"/>
+                <circle class="shipment-marker" cx="650" cy="380" r="8" fill="url(#shipmentGlow)" stroke="#0ea5e9" stroke-width="2"/>
+
+                <!-- Port labels -->
+                <text class="port-label" x="150" y="180">Shanghai</text>
+                <text class="port-label" x="350" y="130">Rotterdam</text>
+                <text class="port-label" x="550" y="210">Singapore</text>
+                <text class="port-label" x="750" y="150">Dubai</text>
+            </svg>
+
+            <!-- Legend -->
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color legend-high"></div>
+                    <span>High Risk</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-medium"></div>
+                    <span>Medium Risk</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color legend-low"></div>
+                    <span>Resolved</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchMapView(view) {
+            document.querySelectorAll('.control-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            console.log('Switching to view:', view);
+        }
+
+        // Theme Toggle Functions
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                updateThemeIcon('sun');
+            } else {
+                document.body.classList.remove('dark-mode');
+                updateThemeIcon('moon');
+            }
+        }
+
+        function toggleTheme() {
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            if (isDarkMode) {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+                updateThemeIcon('moon');
+            } else {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+                updateThemeIcon('sun');
+            }
+        }
+
+        function updateThemeIcon(icon) {
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                if (icon === 'sun') {
+                    themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                    themeToggle.title = 'Switch to light mode';
+                } else {
+                    themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                    themeToggle.title = 'Switch to dark mode';
+                }
+            }
+        }
+
+        // Initialize theme on page load
+        window.addEventListener('load', function() {
+            initializeTheme();
+        });
+    </script>
+</body>
+</html>

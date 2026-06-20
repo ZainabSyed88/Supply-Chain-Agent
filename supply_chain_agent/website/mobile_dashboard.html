@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ChainPulse">
+    <title>ChainPulse - Supply Chain Dashboard</title>
+    <link rel="stylesheet" href="mobile_dashboard_styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <!-- Status Bar Area (Safe Area Top) -->
+    <div class="safe-area-top"></div>
+
+    <!-- Mobile Dashboard Container -->
+    <div class="mobile-dashboard">
+        <!-- Header -->
+        <header class="mobile-header">
+            <div class="header-top">
+                <div class="header-left">
+                    <button class="menu-toggle" onclick="toggleMenu()">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h1 class="app-title">ChainPulse</h1>
+                </div>
+                <div class="header-right">
+                    <button class="icon-btn notification-btn" onclick="toggleNotifications()">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge" id="notifBadge">3</span>
+                    </button>
+                    <button class="icon-btn settings-btn" onclick="toggleSettings()">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="header-search">
+                <input type="search" class="search-input" placeholder="Search suppliers...">
+                <i class="fas fa-search"></i>
+            </div>
+        </header>
+
+        <!-- Sidebar Navigation -->
+        <nav class="mobile-sidebar" id="mobileSidebar">
+            <div class="sidebar-header">
+                <h2>Menu</h2>
+                <button class="close-btn" onclick="toggleMenu()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <ul class="sidebar-menu">
+                <li><a href="#" onclick="switchTab('dashboard', event)" class="active"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+                <li><a href="#" onclick="switchTab('suppliers', event)"><i class="fas fa-building"></i> Suppliers</a></li>
+                <li><a href="#" onclick="switchTab('disruptions', event)"><i class="fas fa-exclamation-triangle"></i> Disruptions</a></li>
+                <li><a href="#" onclick="switchTab('shipments', event)"><i class="fas fa-box"></i> Shipments</a></li>
+                <li><a href="#" onclick="switchTab('analytics', event)"><i class="fas fa-chart-bar"></i> Analytics</a></li>
+                <li><a href="#" onclick="switchTab('settings', event)"><i class="fas fa-sliders-h"></i> Settings</a></li>
+            </ul>
+        </nav>
+
+        <!-- Overlay for sidebar -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleMenu()"></div>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- DASHBOARD TAB -->
+            <div class="tab-content active" id="dashboard-tab">
+                <!-- Status Cards (Horizontal Scroll) -->
+                <div class="cards-carousel">
+                    <div class="status-card critical">
+                        <div class="card-icon"><i class="fas fa-exclamation-circle"></i></div>
+                        <div class="card-content">
+                            <div class="card-label">Active Disruptions</div>
+                            <div class="card-value" id="disruptionCount">3</div>
+                        </div>
+                        <div class="card-trend up"><i class="fas fa-arrow-up"></i> 2</div>
+                    </div>
+                    <div class="status-card warning">
+                        <div class="card-icon"><i class="fas fa-heartbeat"></i></div>
+                        <div class="card-content">
+                            <div class="card-label">Chain Health</div>
+                            <div class="card-value" id="healthScore">85%</div>
+                        </div>
+                        <div class="card-trend down"><i class="fas fa-arrow-down"></i> 5%</div>
+                    </div>
+                    <div class="status-card success">
+                        <div class="card-icon"><i class="fas fa-box"></i></div>
+                        <div class="card-content">
+                            <div class="card-label">Shipments</div>
+                            <div class="card-value" id="shipmentCount">24</div>
+                        </div>
+                        <div class="card-trend up"><i class="fas fa-arrow-up"></i> 3</div>
+                    </div>
+                    <div class="status-card info">
+                        <div class="card-icon"><i class="fas fa-users"></i></div>
+                        <div class="card-content">
+                            <div class="card-label">Suppliers</div>
+                            <div class="card-value" id="supplierCount">12</div>
+                        </div>
+                        <div class="card-trend neutral">−</div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <section class="quick-actions">
+                    <h2>Quick Actions</h2>
+                    <div class="action-grid">
+                        <button class="action-btn" onclick="quickAction('run-orchestrator')">
+                            <i class="fas fa-play-circle"></i>
+                            <span>Run Analysis</span>
+                        </button>
+                        <button class="action-btn" onclick="quickAction('generate-report')">
+                            <i class="fas fa-file-pdf"></i>
+                            <span>Generate Report</span>
+                        </button>
+                        <button class="action-btn" onclick="quickAction('export-data')">
+                            <i class="fas fa-download"></i>
+                            <span>Export Data</span>
+                        </button>
+                        <button class="action-btn" onclick="quickAction('alert-team')">
+                            <i class="fas fa-bell"></i>
+                            <span>Alert Team</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Critical Alerts -->
+                <section class="alerts-section">
+                    <h2>Critical Alerts</h2>
+                    <div class="alert-list" id="alertList">
+                        <div class="alert alert-critical">
+                            <div class="alert-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="alert-content">
+                                <div class="alert-title">Weather Disruption</div>
+                                <div class="alert-message">Heavy storms in Shanghai port. Est. delay: 48 hours</div>
+                                <div class="alert-time">10 mins ago</div>
+                            </div>
+                            <button class="alert-action" onclick="acknowledgeAlert(this)"><i class="fas fa-check"></i></button>
+                        </div>
+                        <div class="alert alert-warning">
+                            <div class="alert-icon"><i class="fas fa-exclamation-circle"></i></div>
+                            <div class="alert-content">
+                                <div class="alert-title">Supplier At Risk</div>
+                                <div class="alert-message">Supplier ABC Corp health score dropped to 72%</div>
+                                <div class="alert-time">1 hour ago</div>
+                            </div>
+                            <button class="alert-action" onclick="acknowledgeAlert(this)"><i class="fas fa-check"></i></button>
+                        </div>
+                        <div class="alert alert-info">
+                            <div class="alert-icon"><i class="fas fa-info-circle"></i></div>
+                            <div class="alert-content">
+                                <div class="alert-title">Shipment Update</div>
+                                <div class="alert-message">Shipment SH-2024-001 arrived at warehouse</div>
+                                <div class="alert-time">2 hours ago</div>
+                            </div>
+                            <button class="alert-action" onclick="acknowledgeAlert(this)"><i class="fas fa-check"></i></button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Risk Chart -->
+                <section class="chart-section">
+                    <h2>Risk Distribution</h2>
+                    <div class="chart-container">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                </section>
+            </div>
+
+            <!-- SUPPLIERS TAB -->
+            <div class="tab-content" id="suppliers-tab">
+                <section class="filter-section">
+                    <h2>Suppliers</h2>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" onclick="filterSuppliers('all')">All</button>
+                        <button class="filter-btn" onclick="filterSuppliers('healthy')">Healthy</button>
+                        <button class="filter-btn" onclick="filterSuppliers('at-risk')">At Risk</button>
+                    </div>
+                </section>
+
+                <div class="suppliers-list" id="suppliersList">
+                    <div class="supplier-card">
+                        <div class="supplier-header">
+                            <div class="supplier-name">ABC Corp</div>
+                            <div class="supplier-status-badge good">93%</div>
+                        </div>
+                        <div class="supplier-info">
+                            <div class="info-item"><i class="fas fa-map-marker-alt"></i> Shanghai, China</div>
+                            <div class="info-item"><i class="fas fa-clock"></i> On-time: 93%</div>
+                            <div class="info-item"><i class="fas fa-exclamation"></i> Risk: Low</div>
+                        </div>
+                        <div class="supplier-actions">
+                            <button onclick="viewSupplier('ABC')"><i class="fas fa-arrow-right"></i> Details</button>
+                        </div>
+                    </div>
+
+                    <div class="supplier-card">
+                        <div class="supplier-header">
+                            <div class="supplier-name">XYZ Logistics</div>
+                            <div class="supplier-status-badge warning">72%</div>
+                        </div>
+                        <div class="supplier-info">
+                            <div class="info-item"><i class="fas fa-map-marker-alt"></i> Singapore</div>
+                            <div class="info-item"><i class="fas fa-clock"></i> On-time: 72%</div>
+                            <div class="info-item"><i class="fas fa-exclamation"></i> Risk: Medium</div>
+                        </div>
+                        <div class="supplier-actions">
+                            <button onclick="viewSupplier('XYZ')"><i class="fas fa-arrow-right"></i> Details</button>
+                        </div>
+                    </div>
+
+                    <div class="supplier-card">
+                        <div class="supplier-header">
+                            <div class="supplier-name">Global Trade Inc</div>
+                            <div class="supplier-status-badge danger">45%</div>
+                        </div>
+                        <div class="supplier-info">
+                            <div class="info-item"><i class="fas fa-map-marker-alt"></i> Bangkok, Thailand</div>
+                            <div class="info-item"><i class="fas fa-clock"></i> On-time: 45%</div>
+                            <div class="info-item"><i class="fas fa-exclamation"></i> Risk: High</div>
+                        </div>
+                        <div class="supplier-actions">
+                            <button onclick="viewSupplier('GTI')"><i class="fas fa-arrow-right"></i> Details</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DISRUPTIONS TAB -->
+            <div class="tab-content" id="disruptions-tab">
+                <h2>Active Disruptions</h2>
+                <div class="disruptions-list" id="disruptionsList">
+                    <div class="disruption-card critical">
+                        <div class="disruption-severity">HIGH</div>
+                        <div class="disruption-header">
+                            <i class="fas fa-cloud-rain"></i>
+                            <div class="disruption-title">Weather Event</div>
+                        </div>
+                        <div class="disruption-details">
+                            <div class="detail-row">
+                                <span class="label">Location:</span>
+                                <span class="value">Shanghai Port</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Delay:</span>
+                                <span class="value">48 hours</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Affected Suppliers:</span>
+                                <span class="value">3 suppliers</span>
+                            </div>
+                        </div>
+                        <button class="action-btn-small" onclick="viewDisruption('weather')">View Details</button>
+                    </div>
+
+                    <div class="disruption-card warning">
+                        <div class="disruption-severity">MEDIUM</div>
+                        <div class="disruption-header">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <div class="disruption-title">Supplier Alert</div>
+                        </div>
+                        <div class="disruption-details">
+                            <div class="detail-row">
+                                <span class="label">Supplier:</span>
+                                <span class="value">XYZ Logistics</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Issue:</span>
+                                <span class="value">Health score drop</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="label">Status:</span>
+                                <span class="value">Monitoring</span>
+                            </div>
+                        </div>
+                        <button class="action-btn-small" onclick="viewDisruption('supplier')">View Details</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SHIPMENTS TAB -->
+            <div class="tab-content" id="shipments-tab">
+                <h2>Shipments</h2>
+                <div class="shipments-list" id="shipmentsList">
+                    <div class="shipment-card">
+                        <div class="shipment-header">
+                            <div class="shipment-id">SH-2024-001</div>
+                            <div class="shipment-status-badge on-time">On Time</div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 75%"></div>
+                        </div>
+                        <div class="shipment-info">
+                            <div class="info-row">
+                                <span class="label">From:</span>
+                                <span class="value">Shanghai</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">To:</span>
+                                <span class="value">Los Angeles</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">ETA:</span>
+                                <span class="value">2024-07-15</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="shipment-card">
+                        <div class="shipment-header">
+                            <div class="shipment-id">SH-2024-002</div>
+                            <div class="shipment-status-badge delayed">Delayed</div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill delayed" style="width: 45%"></div>
+                        </div>
+                        <div class="shipment-info">
+                            <div class="info-row">
+                                <span class="label">From:</span>
+                                <span class="value">Singapore</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">To:</span>
+                                <span class="value">New York</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">ETA:</span>
+                                <span class="value">2024-07-18 (+2 days)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ANALYTICS TAB -->
+            <div class="tab-content" id="analytics-tab">
+                <h2>Analytics & Insights</h2>
+                <div class="analytics-container">
+                    <section class="analytics-section">
+                        <h3>Performance Metrics</h3>
+                        <div class="metric">
+                            <div class="metric-label">Overall Health</div>
+                            <div class="metric-bar">
+                                <div class="metric-fill" style="width: 85%"></div>
+                            </div>
+                            <div class="metric-value">85%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">On-Time Delivery</div>
+                            <div class="metric-bar">
+                                <div class="metric-fill" style="width: 88%"></div>
+                            </div>
+                            <div class="metric-value">88%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Supplier Reliability</div>
+                            <div class="metric-bar">
+                                <div class="metric-fill" style="width: 79%"></div>
+                            </div>
+                            <div class="metric-value">79%</div>
+                        </div>
+                    </section>
+
+                    <section class="analytics-section">
+                        <h3>Recent Activity</h3>
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-icon"><i class="fas fa-check-circle"></i></div>
+                                <div class="activity-text">Shipment completed</div>
+                                <div class="activity-time">2 hours ago</div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon"><i class="fas fa-bell"></i></div>
+                                <div class="activity-text">Disruption detected</div>
+                                <div class="activity-time">4 hours ago</div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon"><i class="fas fa-sync"></i></div>
+                                <div class="activity-text">Data sync completed</div>
+                                <div class="activity-time">6 hours ago</div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- SETTINGS TAB -->
+            <div class="tab-content" id="settings-tab">
+                <h2>Settings</h2>
+                <div class="settings-container">
+                    <section class="settings-section">
+                        <h3>Notifications</h3>
+                        <div class="toggle-item">
+                            <label>Push Notifications</label>
+                            <input type="checkbox" checked class="toggle-switch">
+                        </div>
+                        <div class="toggle-item">
+                            <label>Email Alerts</label>
+                            <input type="checkbox" checked class="toggle-switch">
+                        </div>
+                        <div class="toggle-item">
+                            <label>Critical Only</label>
+                            <input type="checkbox" class="toggle-switch">
+                        </div>
+                    </section>
+
+                    <section class="settings-section">
+                        <h3>Display</h3>
+                        <div class="toggle-item">
+                            <label>Dark Mode</label>
+                            <input type="checkbox" class="toggle-switch">
+                        </div>
+                        <div class="toggle-item">
+                            <label>Compact View</label>
+                            <input type="checkbox" class="toggle-switch">
+                        </div>
+                    </section>
+
+                    <section class="settings-section">
+                        <h3>About</h3>
+                        <div class="info-item">
+                            <span>App Version:</span>
+                            <span>2.1.0</span>
+                        </div>
+                        <div class="info-item">
+                            <span>Last Updated:</span>
+                            <span>2024-06-18</span>
+                        </div>
+                    </section>
+
+                    <button class="logout-btn" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Bottom Navigation (Mobile Only) -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" onclick="switchTab('dashboard', event)">
+                <i class="fas fa-chart-line"></i>
+                <span>Dashboard</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('suppliers', event)">
+                <i class="fas fa-building"></i>
+                <span>Suppliers</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('disruptions', event)">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Alerts</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('shipments', event)">
+                <i class="fas fa-box"></i>
+                <span>Shipments</span>
+            </button>
+            <button class="nav-item" onclick="switchTab('analytics', event)">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Notification Panel -->
+    <div class="notification-panel" id="notificationPanel">
+        <div class="panel-header">
+            <h3>Notifications</h3>
+            <button class="close-btn" onclick="toggleNotifications()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="notifications-content">
+            <div class="notification-item unread">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div class="notification-text">
+                    <div class="notification-title">Critical Disruption</div>
+                    <div class="notification-message">Shanghai port disruption detected</div>
+                    <div class="notification-time">Just now</div>
+                </div>
+            </div>
+            <div class="notification-item unread">
+                <i class="fas fa-info-circle"></i>
+                <div class="notification-text">
+                    <div class="notification-title">Shipment Update</div>
+                    <div class="notification-message">SH-2024-001 reached halfway point</div>
+                    <div class="notification-time">30 mins ago</div>
+                </div>
+            </div>
+            <div class="notification-item">
+                <i class="fas fa-check-circle"></i>
+                <div class="notification-text">
+                    <div class="notification-title">Analysis Complete</div>
+                    <div class="notification-message">Supply chain analysis finished</div>
+                    <div class="notification-time">2 hours ago</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Safe Area Bottom -->
+    <div class="safe-area-bottom"></div>
+
+    <!-- Scripts -->
+    <script src="mobile_dashboard_script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>

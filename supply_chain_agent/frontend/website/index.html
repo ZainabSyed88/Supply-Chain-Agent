@@ -4,8 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChainPulse - Supply Chain Intelligence Platform</title>
+    <!-- Critical CSS for fast rendering -->
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto; background: #ffffff; color: #1e293b; }
+        .navbar { background: linear-gradient(135deg, #1e3a5f 0%, #0f2340 100%); padding: 16px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 1000; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+        .navbar-content { display: flex; justify-content: space-between; align-items: center; gap: 32px; }
+        .logo { display: flex; align-items: center; gap: 12px; color: white; font-size: 20px; font-weight: 600; }
+        .auth-section { display: flex; gap: 12px; align-items: center; }
+        .btn { padding: 10px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; font-size: 14px; }
+        .btn-auth-login { background: #0ea5e9; color: white; }
+        button i { margin-right: 6px; }
+        .nav-menu { display: flex; gap: 24px; list-style: none; }
+        .nav-link { color: rgba(255, 255, 255, 0.7); text-decoration: none; transition: color 0.3s; }
+        .nav-link:hover { color: white; }
+        .hero { text-align: center; padding: 60px 20px; }
+    </style>
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Async Font Awesome (non-blocking) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'; this.onload=null;">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <!-- Apply dark mode immediately to prevent flash -->
+    <script>
+        const theme = localStorage.getItem('theme') || 'dark';
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark-mode-init');
+            document.write('<style>body.dark-mode, body.dark-mode-init { background-color: #0f1419; color: #f1f5f9; }</style>');
+        }
+    </script>
 </head>
 <body>
     <!-- Navigation -->
@@ -22,12 +49,21 @@
                     <a href="#capabilities" class="nav-link">Capabilities</a>
                     <a href="#contact" class="nav-link">Contact</a>
                     <a href="mission-control.html" class="nav-link">Mission Control</a>
+                    <a href="global-map.html" class="nav-link">Global Map</a>
+                    <a href="parcel-tracking.html" class="nav-link">Parcels</a>
                     <a href="war-room.html" class="nav-link">War Room</a>
                     <a href="admin-portal.html" class="btn btn-primary">Admin</a>
                 </div>
                 <div class="auth-section">
+                    <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
                     <button id="loginBtn" class="btn btn-auth-login" onclick="openLoginModal()">Sign In</button>
-                    <button id="logoutBtn" class="btn btn-auth-logout" onclick="logout()" style="display: none;">Sign Out</button>
+                    <div id="userProfile" class="user-profile-menu" style="display: none;">
+                        <span class="user-welcome">Welcome, <span id="userName"></span></span>
+                        <button class="btn-dropdown-item" onclick="restartTour()">👉 Take Tour</button>
+                        <button class="btn-dropdown-item" onclick="logout()">Sign Out</button>
+                    </div>
                 </div>
                 <div class="hamburger">
                     <span></span>
@@ -70,11 +106,36 @@
     <section class="hero">
         <div class="container">
             <div class="hero-content">
+                <div style="display: inline-block; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); padding: 8px 16px; border-radius: 20px; margin-bottom: 16px; font-size: 12px; color: #0ea5e9; font-weight: 600;">
+                    🚀 AI-POWERED SUPPLY CHAIN INTELLIGENCE
+                </div>
                 <h1 class="hero-title">Orchestrating Resilience in Global Supply Chains</h1>
-                <p class="hero-subtitle">AI-powered multi-agent system to detect, prevent, and mitigate supply chain disruptions in real-time</p>
+                <p class="hero-subtitle">Real-time disruption detection, AI-powered risk assessment, and automated mitigation strategies. Monitor 1000+ suppliers, 4812 active shipments, and countless disruptions simultaneously with our multi-agent intelligence system.</p>
                 <div class="hero-buttons">
-                    <button class="btn btn-primary-large" onclick="openDemo()">Start Free Trial</button>
-                    <button class="btn btn-secondary-large" onclick="scrollToSection('capabilities')">Learn More</button>
+                    <button class="btn btn-primary-large" onclick="openDemo()">🎯 Start Free Trial</button>
+                    <button class="btn btn-secondary-large" onclick="scrollToSection('capabilities')">📊 View Dashboards</button>
+                </div>
+                <div style="display: flex; gap: 24px; margin-top: 32px; font-size: 12px; color: rgba(255, 255, 255, 0.6);">
+                    <div><strong style="color: white;">1,284</strong> Enterprises Trust Us</div>
+                    <div><strong style="color: white;">99.8%</strong> System Uptime</div>
+                    <div><strong style="color: white;">$2.3B</strong> Revenue Protected</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trusted By Section -->
+    <section style="background: white; padding: 60px 0; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0;">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 40px;">
+                <p style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px;">TRUSTED BY THE WORLD'S MOST RESILIENT ORGANIZATIONS</p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 40px; align-items: center;">
+                    <div style="font-weight: 700; color: #475569; font-size: 16px;">Global Logistics</div>
+                    <div style="font-weight: 700; color: #475569; font-size: 16px;">Prime Retail</div>
+                    <div style="font-weight: 700; color: #475569; font-size: 16px;">SecureBank</div>
+                    <div style="font-weight: 700; color: #475569; font-size: 16px;">Titan Energy</div>
+                    <div style="font-weight: 700; color: #475569; font-size: 16px;">CoreDefense</div>
+                    <div style="font-weight: 700; color: #475569; font-size: 16px;">Apex Pharma</div>
                 </div>
             </div>
         </div>
@@ -99,6 +160,55 @@
                 <div class="kpi-card">
                     <div class="kpi-number">450+</div>
                     <div class="kpi-label">Hrs Saved Monthly</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Showcase Section -->
+    <section class="dashboards-section" style="background: linear-gradient(135deg, #0f1419 0%, #1a2f4a 100%); padding: 80px 0; color: white;">
+        <div class="container">
+            <div class="section-header" style="text-align: center; margin-bottom: 60px;">
+                <h2 style="color: #0ea5e9; font-size: 36px; margin-bottom: 16px;">🎯 Enterprise Dashboards</h2>
+                <p style="font-size: 16px; color: rgba(255, 255, 255, 0.7);">Access real-time insights across your global supply chain with powerful interactive dashboards</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-bottom: 40px;">
+                <!-- Global Map Dashboard -->
+                <div style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 12px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.transform='translateY(-8px)'; this.style.borderColor='rgba(14, 165, 233, 0.6)';" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(14, 165, 233, 0.3)';">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🌍</div>
+                    <h3 style="margin-bottom: 12px;">Global Logistics Map</h3>
+                    <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 20px; font-size: 14px;">Real-time visualization of 4,812 active shipments, port congestion, and risk zones worldwide</p>
+                    <a href="global-map.html" style="display: inline-block; background: #0ea5e9; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; transition: all 0.3s;">View Map →</a>
+                </div>
+
+                <!-- Mission Control Dashboard -->
+                <div style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 12px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.transform='translateY(-8px)'; this.style.borderColor='rgba(14, 165, 233, 0.6)';" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(14, 165, 233, 0.3)';">
+                    <div style="font-size: 48px; margin-bottom: 16px;">🎛️</div>
+                    <h3 style="margin-bottom: 12px;">Mission Control</h3>
+                    <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 20px; font-size: 14px;">Real-time agent orchestration, live metrics (94.2% auto-mitigation), and system health status</p>
+                    <a href="mission-control.html" style="display: inline-block; background: #0ea5e9; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; transition: all 0.3s;">Launch Control →</a>
+                </div>
+
+                <!-- Parcel Tracking Dashboard -->
+                <div style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(14, 165, 233, 0.05) 100%); border: 1px solid rgba(14, 165, 233, 0.3); border-radius: 12px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.3s;" onmouseover="this.style.transform='translateY(-8px)'; this.style.borderColor='rgba(14, 165, 233, 0.6)';" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(14, 165, 233, 0.3)';">
+                    <div style="font-size: 48px; margin-bottom: 16px;">📦</div>
+                    <h3 style="margin-bottom: 12px;">Parcel Tracking</h3>
+                    <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 20px; font-size: 14px;">Monitor 12,847+ ecommerce parcels with AI threat detection and 2.3hr disruption alerts</p>
+                    <a href="parcel-tracking.html" style="display: inline-block; background: #0ea5e9; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; font-weight: 600; transition: all 0.3s;">Track Parcels →</a>
+                </div>
+            </div>
+
+            <!-- Feature highlights -->
+            <div style="background: rgba(14, 165, 233, 0.05); border: 1px solid rgba(14, 165, 233, 0.2); border-radius: 12px; padding: 32px; text-align: center;">
+                <h3 style="margin-bottom: 24px; font-size: 18px;">Powered by 12 Specialized AI Agents</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px;">
+                    <div style="padding: 12px; background: rgba(14, 165, 233, 0.1); border-radius: 8px; font-size: 12px;"><strong>🔍 Supplier Monitor</strong></div>
+                    <div style="padding: 12px; background: rgba(14, 165, 233, 0.1); border-radius: 8px; font-size: 12px;"><strong>⚠️ Disruption Detector</strong></div>
+                    <div style="padding: 12px; background: rgba(14, 165, 233, 0.1); border-radius: 8px; font-size: 12px;"><strong>📊 Risk Assessor</strong></div>
+                    <div style="padding: 12px; background: rgba(14, 165, 233, 0.1); border-radius: 8px; font-size: 12px;"><strong>🛡️ Mitigation Planner</strong></div>
+                    <div style="padding: 12px; background: rgba(14, 165, 233, 0.1); border-radius: 8px; font-size: 12px;"><strong>📢 Notifier Agent</strong></div>
+                    <div style="padding: 12px; background: rgba(14, 165, 233, 0.1); border-radius: 8px; font-size: 12px;"><strong>🤖 And 7 more...</strong></div>
                 </div>
             </div>
         </div>
@@ -548,8 +658,16 @@
         </div>
     </div>
 
+    <!-- Ask Me Button - Top Right -->
+    <div class="ask-me-container">
+        <button class="ask-me-btn" onclick="toggleChatbot()" title="Chat with AI">
+            <span class="ask-me-icon">💬</span>
+            <span class="ask-me-label">Ask Me</span>
+        </button>
+    </div>
+
     <!-- Chatbot Widget -->
-    <div id="chatbotWidget" class="chatbot-widget">
+    <div id="chatbotWidget" class="chatbot-widget" style="display: none;">
         <!-- Agent Avatar Section -->
         <div class="chatbot-header">
             <div class="agent-avatar">
@@ -616,6 +734,78 @@
         </button>
     </div>
 
+    <!-- Welcome Modal for New Users -->
+    <div id="welcomeModal" class="welcome-modal" style="display: none;">
+        <div class="welcome-content">
+            <button class="welcome-close" onclick="closeWelcomeModal()">✕</button>
+            
+            <div class="welcome-header">
+                <div class="welcome-icon">👋</div>
+                <h1>Welcome to ChainPulse!</h1>
+                <p>Your AI-powered supply chain intelligence platform is ready</p>
+            </div>
+
+            <div class="welcome-body">
+                <p>Choose how you'd like to learn about ChainPulse:</p>
+                
+                <div class="welcome-options">
+                    <button class="welcome-option" onclick="startTour()">
+                        <div class="option-icon">🎯</div>
+                        <div class="option-content">
+                            <h3>Interactive Tour</h3>
+                            <p>12-step guided walkthrough with spotlight effects showing each feature</p>
+                        </div>
+                        <div class="option-arrow">→</div>
+                    </button>
+
+                    <button class="welcome-option welcome-option-skip" onclick="skipTutorial()">
+                        <div class="option-icon">⚡</div>
+                        <div class="option-content">
+                            <h3>Skip for Now</h3>
+                            <p>Start exploring immediately. Restart the tour anytime from your profile</p>
+                        </div>
+                        <div class="option-arrow">→</div>
+                    </button>
+                </div>
+            </div>
+
+            <div class="welcome-footer">
+                <small>💡 You can restart this tour anytime from your profile menu</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Guided Tour Modal -->
+    <div id="tourOverlay" class="tour-overlay" style="display: none;">
+        <!-- Tour Backdrop -->
+        <div class="tour-backdrop"></div>
+        
+        <!-- Tour Spotlight -->
+        <div id="tourSpotlight" class="tour-spotlight"></div>
+        
+        <!-- Tour Card -->
+        <div id="tourCard" class="tour-card">
+            <div class="tour-header">
+                <h3 id="tourTitle">Welcome to ChainPulse!</h3>
+                <button class="tour-close" onclick="endTour()" title="Skip tour">✕</button>
+            </div>
+            
+            <div class="tour-content">
+                <p id="tourDescription">Let me show you around the platform...</p>
+                <div id="tourFeatures" class="tour-features"></div>
+            </div>
+            
+            <div class="tour-footer">
+                <button class="tour-btn tour-btn-secondary" onclick="endTour()">Skip Tour</button>
+                <button class="tour-btn tour-btn-primary" onclick="nextTourStep()">Next</button>
+            </div>
+            
+            <div class="tour-progress">
+                <span id="tourStep">1</span> / <span id="tourTotal">8</span>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Authentication functions
         function openLoginModal() {
@@ -633,6 +823,7 @@
             
             sessionStorage.setItem('isLoggedIn', 'true');
             sessionStorage.setItem('userName', userName);
+            sessionStorage.setItem('userEmail', email);
             
             document.getElementById('loginBtn').style.display = 'none';
             document.getElementById('userProfile').style.display = 'flex';
@@ -641,11 +832,19 @@
             closeLoginModal();
             document.getElementById('email').value = '';
             document.getElementById('password').value = '';
+            
+            // Initialize tour for new users after successful login
+            if (typeof onLoginSuccess === 'function') {
+                setTimeout(() => {
+                    onLoginSuccess();
+                }, 300);
+            }
         }
 
         function logout() {
             sessionStorage.removeItem('isLoggedIn');
             sessionStorage.removeItem('userName');
+            sessionStorage.removeItem('userEmail');
             
             document.getElementById('loginBtn').style.display = 'block';
             document.getElementById('userProfile').style.display = 'none';
@@ -873,8 +1072,144 @@
                 intro.style.display = 'none';
             }
         }
+
+        // Theme Toggle Functions
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                updateThemeIcon('sun');
+            } else {
+                document.body.classList.remove('dark-mode');
+                updateThemeIcon('moon');
+            }
+        }
+
+        function toggleTheme() {
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            if (isDarkMode) {
+                document.body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+                updateThemeIcon('moon');
+            } else {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+                updateThemeIcon('sun');
+            }
+        }
+
+        function updateThemeIcon(icon) {
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                if (icon === 'sun') {
+                    themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+                    themeToggle.title = 'Switch to light mode';
+                } else {
+                    themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+                    themeToggle.title = 'Switch to dark mode';
+                }
+            }
+        }
+
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTheme();
+        });
+
+        // Tour Functions
+        let currentTourStep = 0;
+        let isTourRunning = false;
+
+        function startTour() {
+            const modal = document.getElementById('welcomeModal');
+            if (modal) modal.style.display = 'none';
+            isTourRunning = true;
+            currentTourStep = 0;
+            showTourStep(0);
+        }
+
+        function showTourStep(stepIndex) {
+            // Tour functionality is in script.js
+            if (typeof showTourStepJS === 'function') {
+                showTourStepJS(stepIndex);
+            }
+        }
+
+        function nextTourStep() {
+            currentTourStep++;
+            showTourStep(currentTourStep);
+        }
+
+        function endTour() {
+            const overlay = document.getElementById('tourOverlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+            
+            const userEmail = sessionStorage.getItem('userEmail');
+            if (userEmail) {
+                localStorage.setItem(`tour_completed_${userEmail}`, 'true');
+            }
+            
+            isTourRunning = false;
+        }
+
+        function restartTour() {
+            currentTourStep = 0;
+            const userEmail = sessionStorage.getItem('userEmail');
+            if (userEmail) {
+                localStorage.removeItem(`tour_completed_${userEmail}`);
+            }
+            startTour();
+        }
+
+        function closeWelcomeModal() {
+            const modal = document.getElementById('welcomeModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function skipTutorial() {
+            closeWelcomeModal();
+            const userEmail = sessionStorage.getItem('userEmail');
+            if (userEmail) {
+                localStorage.setItem(`tour_completed_${userEmail}`, 'true');
+            }
+        }
+
+        function initializeTourSystem() {
+            const userEmail = sessionStorage.getItem('userEmail');
+            const tourCompleted = localStorage.getItem(`tour_completed_${userEmail}`);
+            
+            if (userEmail && !tourCompleted && !isTourRunning) {
+                setTimeout(() => {
+                    const modal = document.getElementById('welcomeModal');
+                    if (modal) {
+                        modal.style.display = 'flex';
+                    }
+                }, 300);
+            }
+        }
+
+        // Defer tour initialization to after page load
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(() => {
+                    if (typeof initializeTourSystem === 'function') initializeTourSystem();
+                }, 800);
+            });
+        } else {
+            setTimeout(() => {
+                if (typeof initializeTourSystem === 'function') initializeTourSystem();
+            }, 800);
+        }
     </script>
 
-    <script src="script.js"></script>
+    <script src="script.js" defer></script>
+    <!-- Font Awesome fallback for icons -->
+    <noscript>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    </noscript>
 </body>
 </html>

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChainPulse AI - Dashboard</title>
+    <link rel="stylesheet" href="dashboard-styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-link"></i>
+                    <span>ChainPulse AI</span>
+                </div>
+                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active" onclick="switchPage('dashboard')">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#ecosystem" class="nav-item" onclick="switchPage('ecosystem')">
+                    <i class="fas fa-sitemap"></i>
+                    <span>Ecosystem</span>
+                </a>
+                <a href="#architecture" class="nav-item" onclick="switchPage('architecture')">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Architecture</span>
+                </a>
+                <a href="#metrics" class="nav-item" onclick="switchPage('metrics')">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Metrics</span>
+                </a>
+                <a href="#agents" class="nav-item" onclick="switchPage('agents')">
+                    <i class="fas fa-robot"></i>
+                    <span>Agents</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <img src="https://ui-avatars.com/api/?name=Agent+Disrupt&background=14b8a6&color=fff" alt="User">
+                    <div class="user-info">
+                        <p class="user-name">Agent Disrupt</p>
+                        <p class="user-email">agent@disruptguard.ai</p>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="header-left">
+                    <h1 id="pageTitle">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn-run-orchestrator" onclick="runOrchestrator()">
+                        <i class="fas fa-play"></i>
+                        <span>Run Orchestrator</span>
+                    </button>
+                    <button class="notifications-btn" onclick="toggleNotifications()">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </button>
+                    <button class="settings-btn" onclick="toggleSettings()">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <div class="content-area">
+                <!-- Dashboard Page -->
+                <div id="dashboard-page" class="page-content active">
+                    <!-- KPI Cards -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <h3>Active Disruptions</h3>
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="kpi-value">3</div>
+                            <div class="kpi-change down">↑ 2 from yesterday</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <h3>Supply Chain Health</h3>
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="kpi-value">87%</div>
+                            <div class="kpi-change up">↓ 3% from yesterday</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <h3>Revenue at Risk</h3>
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="kpi-value">$2.3M</div>
+                            <div class="kpi-change down">↑ $400K from yesterday</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-header">
+                                <h3>Agents Active</h3>
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="kpi-value">15</div>
+                            <div class="kpi-change up">All systems operational</div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Section -->
+                    <div class="charts-grid">
+                        <div class="chart-card">
+                            <h3>Supply Chain Status</h3>
+                            <div class="status-list">
+                                <div class="status-item">
+                                    <span class="status-label">Suppliers</span>
+                                    <div class="status-bar">
+                                        <div class="status-fill" style="width: 92%; background: #10b981;"></div>
+                                    </div>
+                                    <span class="status-percent">92%</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Shipments</span>
+                                    <div class="status-bar">
+                                        <div class="status-fill" style="width: 78%; background: #f59e0b;"></div>
+                                    </div>
+                                    <span class="status-percent">78%</span>
+                                </div>
+                                <div class="status-item">
+                                    <span class="status-label">Inventory</span>
+                                    <div class="status-bar">
+                                        <div class="status-fill" style="width: 65%; background: #ef4444;"></div>
+                                    </div>
+                                    <span class="status-percent">65%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chart-card">
+                            <h3>Active Disruptions</h3>
+                            <div class="disruption-list">
+                                <div class="disruption-item">
+                                    <div class="disruption-header">
+                                        <span class="disruption-name">Rotterdam Port Strike</span>
+                                        <span class="severity-badge severity-high">High</span>
+                                    </div>
+                                    <p class="disruption-detail">Delay: 48 hours | Impact: $1.2M</p>
+                                </div>
+                                <div class="disruption-item">
+                                    <div class="disruption-header">
+                                        <span class="disruption-name">Shanghai Weather</span>
+                                        <span class="severity-badge severity-medium">Medium</span>
+                                    </div>
+                                    <p class="disruption-detail">Delay: 24 hours | Impact: $800K</p>
+                                </div>
+                                <div class="disruption-item">
+                                    <div class="disruption-header">
+                                        <span class="disruption-name">Inventory Shortage</span>
+                                        <span class="severity-badge severity-low">Low</span>
+                                    </div>
+                                    <p class="disruption-detail">3 SKUs critical | Impact: $300K</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="activity-card">
+                        <h3>Recent Recommendations</h3>
+                        <div class="timeline">
+                            <div class="timeline-item">
+                                <div class="timeline-marker success"></div>
+                                <div class="timeline-content">
+                                    <p class="timeline-title">Alternative Route Approved</p>
+                                    <p class="timeline-description">Mitigation for Rotterdam port strike approved. Est. savings: $150K</p>
+                                    <p class="timeline-time">2 hours ago</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker warning"></div>
+                                <div class="timeline-content">
+                                    <p class="timeline-title">Supplier Risk Alert</p>
+                                    <p class="timeline-description">EuroLogistics Ltd risk score increased to 0.5</p>
+                                    <p class="timeline-time">4 hours ago</p>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="timeline-marker info"></div>
+                                <div class="timeline-content">
+                                    <p class="timeline-title">Demand Forecast Updated</p>
+                                    <p class="timeline-description">22% surge predicted for Days 4-5. Inventory adjusted.</p>
+                                    <p class="timeline-time">6 hours ago</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ecosystem Page -->
+                <div id="ecosystem-page" class="page-content">
+                    <div class="ecosystem-grid">
+                        <div class="ecosystem-card">
+                            <h3>Data Integrations</h3>
+                            <ul>
+                                <li><i class="fas fa-check"></i> ERP Systems (SAP, Oracle, NetSuite)</li>
+                                <li><i class="fas fa-check"></i> Warehouse Management (Manhattan, Infor)</li>
+                                <li><i class="fas fa-check"></i> Transportation (FedEx, DHL, UPS APIs)</li>
+                                <li><i class="fas fa-check"></i> Weather Data (NOAA, Weather.com)</li>
+                                <li><i class="fas fa-check"></i> News & Events (Reuters, Bloomberg)</li>
+                            </ul>
+                        </div>
+
+                        <div class="ecosystem-card">
+                            <h3>AI/ML Components</h3>
+                            <ul>
+                                <li><i class="fas fa-check"></i> Demand Forecasting</li>
+                                <li><i class="fas fa-check"></i> Disruption Detection</li>
+                                <li><i class="fas fa-check"></i> Risk Assessment</li>
+                                <li><i class="fas fa-check"></i> Route Optimization</li>
+                                <li><i class="fas fa-check"></i> Supplier Scoring</li>
+                            </ul>
+                        </div>
+
+                        <div class="ecosystem-card">
+                            <h3>Infrastructure</h3>
+                            <ul>
+                                <li><i class="fas fa-check"></i> AWS/Azure/GCP Cloud</li>
+                                <li><i class="fas fa-check"></i> Kubernetes Orchestration</li>
+                                <li><i class="fas fa-check"></i> Real-time Data Pipeline</li>
+                                <li><i class="fas fa-check"></i> Multi-region Deployment</li>
+                                <li><i class="fas fa-check"></i> 99.99% Uptime SLA</li>
+                            </ul>
+                        </div>
+
+                        <div class="ecosystem-card">
+                            <h3>Monitoring & Analytics</h3>
+                            <ul>
+                                <li><i class="fas fa-check"></i> Real-time Dashboards</li>
+                                <li><i class="fas fa-check"></i> Alert Management</li>
+                                <li><i class="fas fa-check"></i> Audit Trails</li>
+                                <li><i class="fas fa-check"></i> Performance Metrics</li>
+                                <li><i class="fas fa-check"></i> Compliance Reports</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Architecture Page -->
+                <div id="architecture-page" class="page-content">
+                    <div class="architecture-section">
+                        <h2>System Architecture</h2>
+                        <div class="architecture-diagram">
+                            <svg viewBox="0 0 800 400" class="architecture-svg">
+                                <!-- Data Layer -->
+                                <rect x="20" y="20" width="150" height="80" fill="#e3f2fd" stroke="#0d9488" stroke-width="2" rx="8"/>
+                                <text x="95" y="75" text-anchor="middle" font-weight="bold" font-size="14">Data Sources</text>
+                                <text x="95" y="90" text-anchor="middle" font-size="12">ERP, WMS, APIs</text>
+
+                                <!-- Processing Layer -->
+                                <rect x="270" y="20" width="150" height="80" fill="#f0f9ff" stroke="#0d9488" stroke-width="2" rx="8"/>
+                                <text x="345" y="75" text-anchor="middle" font-weight="bold" font-size="14">Agent Layer</text>
+                                <text x="345" y="90" text-anchor="middle" font-size="12">15+ Agents</text>
+
+                                <!-- Intelligence Layer -->
+                                <rect x="520" y="20" width="150" height="80" fill="#f0fdf4" stroke="#0d9488" stroke-width="2" rx="8"/>
+                                <text x="595" y="75" text-anchor="middle" font-weight="bold" font-size="14">Intelligence</text>
+                                <text x="595" y="90" text-anchor="middle" font-size="12">AI/ML, Analysis</text>
+
+                                <!-- Orchestrator -->
+                                <rect x="145" y="180" width="510" height="80" fill="#f5f3ff" stroke="#0d9488" stroke-width="2" rx="8"/>
+                                <text x="400" y="235" text-anchor="middle" font-weight="bold" font-size="14">Orchestration Engine</text>
+
+                                <!-- Output Layer -->
+                                <rect x="20" y="330" width="100" height="50" fill="#fef3c7" stroke="#0d9488" stroke-width="2" rx="8"/>
+                                <text x="70" y="360" text-anchor="middle" font-size="12">Dashboard</text>
+
+                                <rect x="200" y="330" width="100" height="50" fill="#fef3c7" stroke="#0d9488" stroke-width="2" rx="8"/>
+                                <text x="250" y="360" text-anchor="middle" font-size="12">Alerts</text>
+
+                                <rect x="380" y="330" width="100" height="50" fill="#fef3c7" stroke="#0d9488" stroke-width="2" rx="8"/>
+                                <text x="430" y="360" text-anchor="middle" font-size="12">Reports</text>
+
+                                <rect x="560" y="330" width="100" height="50" fill="#fef3c7" stroke="#0d9488" stroke-width="2" rx="8"/>
+                                <text x="610" y="360" text-anchor="middle" font-size="12">API</text>
+
+                                <!-- Connections -->
+                                <line x1="170" y1="100" x2="270" y2="100" stroke="#0d9488" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                <line x1="420" y1="100" x2="520" y2="100" stroke="#0d9488" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                <line x1="345" y1="100" x2="345" y2="180" stroke="#0d9488" stroke-width="2" marker-end="url(#arrowhead)"/>
+                                <line x1="595" y1="100" x2="345" y2="180" stroke="#0d9488" stroke-width="2" marker-end="url(#arrowhead)"/>
+
+                                <line x1="250" y1="260" x2="70" y2="330" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+                                <line x1="345" y1="260" x2="250" y2="330" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+                                <line x1="400" y1="260" x2="430" y2="330" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+                                <line x1="500" y1="260" x2="610" y2="330" stroke="#666" stroke-width="1" stroke-dasharray="5,5"/>
+
+                                <defs>
+                                    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                                        <polygon points="0 0, 10 3, 0 6" fill="#0d9488"/>
+                                    </marker>
+                                </defs>
+                            </svg>
+                        </div>
+
+                        <div class="architecture-details">
+                            <h3>Key Components</h3>
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <h4><i class="fas fa-database"></i> Data Ingestion</h4>
+                                    <p>Real-time data collection from multiple sources with automated validation and transformation.</p>
+                                </div>
+                                <div class="detail-item">
+                                    <h4><i class="fas fa-robot"></i> Multi-Agent System</h4>
+                                    <p>15+ specialized agents working autonomously with real-time coordination and decision-making.</p>
+                                </div>
+                                <div class="detail-item">
+                                    <h4><i class="fas fa-brain"></i> AI/ML Intelligence</h4>
+                                    <p>Advanced algorithms for forecasting, anomaly detection, and optimization with explainable decisions.</p>
+                                </div>
+                                <div class="detail-item">
+                                    <h4><i class="fas fa-sync"></i> Orchestration</h4>
+                                    <p>Centralized coordination of all agents with workflow management and automated execution.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Metrics Page -->
+                <div id="metrics-page" class="page-content">
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <h3>System Performance</h3>
+                            <div class="metric-item">
+                                <span>Response Time</span>
+                                <span class="metric-value">245ms</span>
+                            </div>
+                            <div class="metric-item">
+                                <span>Data Processing</span>
+                                <span class="metric-value">15,000 events/sec</span>
+                            </div>
+                            <div class="metric-item">
+                                <span>Uptime</span>
+                                <span class="metric-value">99.99%</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <h3>AI Accuracy</h3>
+                            <div class="metric-item">
+                                <span>Demand Forecast</span>
+                                <span class="metric-value">94.2%</span>
+                            </div>
+                            <div class="metric-item">
+                                <span>Disruption Detection</span>
+                                <span class="metric-value">98.1%</span>
+                            </div>
+                            <div class="metric-item">
+                                <span>Risk Assessment</span>
+                                <span class="metric-value">96.5%</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <h3>Business Impact</h3>
+                            <div class="metric-item">
+                                <span>Revenue Protected</span>
+                                <span class="metric-value">$2.3M</span>
+                            </div>
+                            <div class="metric-item">
+                                <span>Cost Savings</span>
+                                <span class="metric-value">$850K/month</span>
+                            </div>
+                            <div class="metric-item">
+                                <span>Time Saved</span>
+                                <span class="metric-value">450 hrs/month</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <h3>Coverage</h3>
+                            <div class="metric-item">
+                                <span>Suppliers Monitored</span>
+                                <span class="metric-value">1,248</span>
+                            </div>
+                            <div class="metric-item">
+                                <span>Active Shipments</span>
+                                <span class="metric-value">34,567</span>
+                            </div>
+                            <div class="metric-item">
+                                <span>Global Regions</span>
+                                <span class="metric-value">42</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agents Page -->
+                <div id="agents-page" class="page-content">
+                    <div class="agents-grid">
+                        <div class="agent-card">
+                            <div class="agent-status active"></div>
+                            <h3>Supplier Monitor</h3>
+                            <p>Real-time vendor performance tracking</p>
+                            <div class="agent-stats">
+                                <span class="stat"><i class="fas fa-check"></i> 4 Suppliers</span>
+                                <span class="stat"><i class="fas fa-timer"></i> 5s interval</span>
+                            </div>
+                        </div>
+
+                        <div class="agent-card">
+                            <div class="agent-status active"></div>
+                            <h3>Disruption Detector</h3>
+                            <p>Automated disruption identification</p>
+                            <div class="agent-stats">
+                                <span class="stat"><i class="fas fa-check"></i> 3 Active</span>
+                                <span class="stat"><i class="fas fa-timer"></i> Real-time</span>
+                            </div>
+                        </div>
+
+                        <div class="agent-card">
+                            <div class="agent-status active"></div>
+                            <h3>Demand Forecaster</h3>
+                            <p>7-day demand prediction</p>
+                            <div class="agent-stats">
+                                <span class="stat"><i class="fas fa-check"></i> 94.2% Accuracy</span>
+                                <span class="stat"><i class="fas fa-timer"></i> Daily</span>
+                            </div>
+                        </div>
+
+                        <div class="agent-card">
+                            <div class="agent-status active"></div>
+                            <h3>Risk Assessment</h3>
+                            <p>Business impact analysis</p>
+                            <div class="agent-stats">
+                                <span class="stat"><i class="fas fa-check"></i> $2.3M Risk</span>
+                                <span class="stat"><i class="fas fa-timer"></i> Continuous</span>
+                            </div>
+                        </div>
+
+                        <div class="agent-card">
+                            <div class="agent-status active"></div>
+                            <h3>Mitigation Agent</h3>
+                            <p>Alternative solution generation</p>
+                            <div class="agent-stats">
+                                <span class="stat"><i class="fas fa-check"></i> 3 Options Avg</span>
+                                <span class="stat"><i class="fas fa-timer"></i> On-demand</span>
+                            </div>
+                        </div>
+
+                        <div class="agent-card">
+                            <div class="agent-status active"></div>
+                            <h3>Inventory Manager</h3>
+                            <p>Stock level optimization</p>
+                            <div class="agent-stats">
+                                <span class="stat"><i class="fas fa-check"></i> 3 SKUs Alert</span>
+                                <span class="stat"><i class="fas fa-timer"></i> Hourly</span>
+                            </div>
+                        </div>
+
+                        <div class="agent-card">
+                            <div class="agent-status active"></div>
+                            <h3>Customer Impact</h3>
+                            <p>Churn risk prediction</p>
+                            <div class="agent-stats">
+                                <span class="stat"><i class="fas fa-check"></i> 4 Customers</span>
+                                <span class="stat"><i class="fas fa-timer"></i> Real-time</span>
+                            </div>
+                        </div>
+
+                        <div class="agent-card">
+                            <div class="agent-status active"></div>
+                            <h3>Self-Healing</h3>
+                            <p>Autonomous mitigation execution</p>
+                            <div class="agent-stats">
+                                <span class="stat"><i class="fas fa-check"></i> 4 Actions</span>
+                                <span class="stat"><i class="fas fa-timer"></i> Instant</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Notifications Panel -->
+        <div id="notificationsPanel" class="side-panel notifications-panel">
+            <div class="panel-header">
+                <h3>Notifications</h3>
+                <button class="panel-close" onclick="toggleNotifications()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="notifications-list">
+                <div class="notification-item alert">
+                    <div class="notification-icon"><i class="fas fa-exclamation-circle"></i></div>
+                    <div class="notification-content">
+                        <p class="notification-title">Rotterdam Port Strike</p>
+                        <p class="notification-time">2 hours ago</p>
+                    </div>
+                </div>
+                <div class="notification-item warning">
+                    <div class="notification-icon"><i class="fas fa-bell"></i></div>
+                    <div class="notification-content">
+                        <p class="notification-title">Supplier Risk Updated</p>
+                        <p class="notification-time">4 hours ago</p>
+                    </div>
+                </div>
+                <div class="notification-item info">
+                    <div class="notification-icon"><i class="fas fa-info-circle"></i></div>
+                    <div class="notification-content">
+                        <p class="notification-title">Orchestrator Executed</p>
+                        <p class="notification-time">6 hours ago</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Panel -->
+        <div id="settingsPanel" class="side-panel settings-panel">
+            <div class="panel-header">
+                <h3>Settings</h3>
+                <button class="panel-close" onclick="toggleSettings()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="settings-list">
+                <div class="settings-item">
+                    <label>
+                        <input type="checkbox" checked>
+                        <span>Real-time Notifications</span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <label>
+                        <input type="checkbox" checked>
+                        <span>Email Alerts</span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <label>
+                        <input type="checkbox">
+                        <span>SMS Alerts</span>
+                    </label>
+                </div>
+                <div class="settings-divider"></div>
+                <div class="settings-item">
+                    <h4>Theme</h4>
+                    <div class="theme-options">
+                        <button class="theme-btn active" onclick="setTheme('light')">Light</button>
+                        <button class="theme-btn" onclick="setTheme('dark')">Dark</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard-script.js"></script>
+</body>
+</html>
