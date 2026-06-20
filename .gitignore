@@ -1,0 +1,16 @@
+.env
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Nested Python environments and caches
+**/.env
+**/.venv/
+**/venv/
+**/__pycache__/
+**/*.py[cod]
+
+# Common local tooling noise
+.DS_Store
+Thumbs.db
