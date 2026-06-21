@@ -88,7 +88,7 @@ supply_chain_agent/
 - Supply chain orchestrator
 - 12 specialized agents
 - Real-time data processing
-- AI/LLM integration (Ollama or OpenAI)
+- AI/LLM integration (OpenAI or NVIDIA)
 
 ---
 

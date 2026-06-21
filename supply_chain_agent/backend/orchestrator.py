@@ -1,13 +1,16 @@
 """
 Main Orchestrator for Supply Chain Disruption Agent
-Coordinates all 5 agents in sequence
-Supports OpenAI API or Ollama (local LLM)
+Coordinates agents in parallel tiers for faster execution.
+Supports OpenAI API only
 """
 
+import asyncio
 import json
 import logging
-from typing import Dict, List
 import os
+import time
+from datetime import datetime
+from typing import Any, Callable, Dict, List
 from config import OPENAI_API_KEY, OPENAI_MODEL
 
 # Try to import OpenAI, but make it optional
@@ -31,9 +34,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class SupplyChainOrchestrator:
-    """Main orchestrator for supply chain disruption management"""
-    
+class AsyncSupplyChainOrchestrator:
+    """Async orchestrator for the supply chain disruption agent."""
+
     def __init__(self):
         # Check if OpenAI API key is available
         if OPENAI_API_KEY and HAS_OPENAI:
@@ -41,157 +44,269 @@ class SupplyChainOrchestrator:
             self.openai_client = OpenAI(api_key=OPENAI_API_KEY)
             self.llm_mode = "openai"
         else:
-            logger.info("OpenAI API key not found. Using Ollama (local LLM) mode")
-            logger.info("Make sure Ollama is running at http://localhost:11434")
-            self.openai_client = None  # No OpenAI client needed for Ollama
-            self.llm_mode = "ollama"
-        
-        self.suppliers = []
-        self.disruptions = []
-        self.at_risk_shipments = []
-        self.results = {}
-        
+            logger.warning(
+                "OpenAI API key not found or OpenAI package not installed. Please set OPENAI_API_KEY and install openai."
+            )
+            self.openai_client = None
+            self.llm_mode = "none"
+
+        self.suppliers: list[dict[str, Any]] = []
+        self.shipments: list[dict[str, Any]] = []
+        self.disruptions: list[dict[str, Any]] = []
+        self.results: dict[str, Any] = {}
+        self.agent_times: dict[str, float] = {}
+        self.errors: dict[str, str] = {}
+
+        self.context = {
+            "suppliers": [],
+            "shipments": [],
+            "disruptions": [],
+            "at_risk_shipments": [],
+            "risk_scores": {},
+            "recommendations": [],
+        }
+
         # Initialize agents (they will handle both OpenAI and Ollama modes)
         self.supplier_monitor = SupplierMonitorAgent(self.openai_client)
         self.disruption_detector = DisruptionDetectorAgent(self.openai_client)
         self.risk_assessor = RiskAssessmentAgent(self.openai_client)
         self.mitigation = MitigationAgent(self.openai_client)
         self.stakeholder = StakeholderNotificationAgent(self.openai_client)
-    
+
     def load_data(self, suppliers_file: str, shipments_file: str, disruptions_file: str):
-        """Load all data files"""
+        """Load all data files and populate shared context."""
         logger.info("Loading data files...")
-        
+
         try:
             with open(suppliers_file, 'r') as f:
                 suppliers_data = json.load(f)
                 self.suppliers = suppliers_data.get('suppliers', [])
+                self.context['suppliers'] = self.suppliers
                 logger.info(f"Loaded {len(self.suppliers)} suppliers")
-            
+
             with open(shipments_file, 'r') as f:
                 shipments_data = json.load(f)
                 self.shipments = shipments_data.get('shipments', [])
+                self.context['shipments'] = self.shipments
                 logger.info(f"Loaded {len(self.shipments)} shipments")
-            
+
             with open(disruptions_file, 'r') as f:
                 disruptions_data = json.load(f)
                 self.disruptions = disruptions_data.get('active_disruptions', [])
+                self.context['disruptions'] = self.disruptions
                 logger.info(f"Loaded {len(self.disruptions)} disruptions")
-        
+
         except FileNotFoundError as e:
             logger.error(f"Error loading data: {e}")
             raise
-    
-    def execute_agent_1_supplier_monitor(self) -> Dict:
-        """Step 1: Monitor supplier health"""
-        logger.info("Starting Agent 1: Supplier Health Monitor")
-        
-        result = self.supplier_monitor.execute("data/suppliers.json")
-        self.results['supplier_monitor'] = result
-        logger.info("Agent 1 complete")
-        return result
-    
-    def execute_agent_2_disruption_detector(self) -> Dict:
-        """Step 2: Detect disruptions"""
-        logger.info("Starting Agent 2: Disruption Detection")
-        
-        result = self.disruption_detector.execute(
-            "data/disruptions.json",
-            "data/suppliers.json",
-            self.suppliers
+
+    async def run_agent_async(
+        self,
+        agent_name: str,
+        agent_func: Callable,
+        on_start: Callable[[str], Any] = None,
+        on_complete: Callable[[str, float, dict], Any] = None,
+        on_error: Callable[[str, str], Any] = None,
+        timeout_seconds: int = 60,
+    ) -> Dict[str, Any]:
+        """
+        Wrapper that runs any sync agent function in a thread pool.
+        Handles timing, timeout, error catching, and callbacks.
+        """
+        start_time = time.time()
+
+        try:
+            if on_start:
+                await on_start(agent_name)
+
+            loop = asyncio.get_event_loop()
+            result = await asyncio.wait_for(
+                loop.run_in_executor(None, agent_func), timeout=timeout_seconds
+            )
+
+            duration_ms = round((time.time() - start_time) * 1000, 2)
+            self.results[agent_name] = result
+            self.agent_times[agent_name] = duration_ms
+
+            if on_complete:
+                await on_complete(agent_name, duration_ms, result)
+
+            return result
+
+        except asyncio.TimeoutError:
+            duration_ms = round((time.time() - start_time) * 1000, 2)
+            error_msg = f"Agent {agent_name} timed out after {timeout_seconds}s"
+            self.errors[agent_name] = error_msg
+            self.agent_times[agent_name] = duration_ms
+
+            if on_error:
+                await on_error(agent_name, error_msg)
+
+            return {}
+
+        except Exception as e:
+            duration_ms = round((time.time() - start_time) * 1000, 2)
+            error_msg = str(e)
+            self.errors[agent_name] = error_msg
+            self.agent_times[agent_name] = duration_ms
+
+            if on_error:
+                await on_error(agent_name, error_msg)
+
+            return {}
+
+    async def run_pipeline_async(
+        self,
+        on_start: Callable[[], Any] = None,
+        on_agent_start: Callable[[str], Any] = None,
+        on_agent_complete: Callable[[str, float, dict], Any] = None,
+        on_agent_error: Callable[[str, str], Any] = None,
+        on_complete: Callable[[dict], Any] = None,
+    ) -> Dict[str, Any]:
+        """Run all agents in parallel tiers.
+        Callbacks allow events to fire at each stage.
+        """
+        pipeline_start = time.time()
+
+        if on_start:
+            await on_start()
+
+        def make_callbacks(agent_name: str):
+            async def _start(name: str):
+                if on_agent_start:
+                    await on_agent_start(name)
+
+            async def _complete(name: str, duration_ms: float, result: dict):
+                if on_agent_complete:
+                    await on_agent_complete(name, duration_ms, result)
+
+            async def _error(name: str, error: str):
+                if on_agent_error:
+                    await on_agent_error(name, error)
+
+            return _start, _complete, _error
+
+        logger.info("Tier 1 starting: supplier_monitor + disruption_detector")
+        s1, c1, e1 = make_callbacks("supplier_monitor")
+        s2, c2, e2 = make_callbacks("disruption_detector")
+
+        tier1_results = await asyncio.gather(
+            self.run_agent_async(
+                "supplier_monitor",
+                lambda: self.supplier_monitor.execute("data/suppliers.json"),
+                on_start=s1,
+                on_complete=c1,
+                on_error=e1,
+            ),
+            self.run_agent_async(
+                "disruption_detector",
+                lambda: self.disruption_detector.execute(
+                    "data/disruptions.json",
+                    "data/suppliers.json",
+                    self.context["suppliers"],
+                ),
+                on_start=s2,
+                on_complete=c2,
+                on_error=e2,
+            ),
+            return_exceptions=False,
         )
-        self.results['disruption_detector'] = result
-        logger.info("Agent 2 complete")
-        return result
-    
-    def execute_agent_3_risk_assessor(self) -> Dict:
-        """Step 3: Assess risk and prioritize"""
-        logger.info("Starting Agent 3: Risk Assessment")
-        
-        result = self.risk_assessor.execute(
-            self.disruptions,
-            "data/shipments.json"
+
+        supplier_result = tier1_results[0] or {}
+        disruption_result = tier1_results[1] or {}
+
+        self.context["disruptions"] = disruption_result.get(
+            "detected_disruptions", self.context["disruptions"]
         )
-        self.results['risk_assessor'] = result
-        
-        # Extract at-risk shipments for next agents
-        if 'intervention_priorities' in result:
-            self.at_risk_shipments = result['intervention_priorities'].get('at_risk_shipments', [])
-        
-        logger.info("Agent 3 complete")
-        return result
-    
-    def execute_agent_4_mitigation(self) -> Dict:
-        """Step 4: Recommend mitigation strategies"""
-        logger.info("Starting Agent 4: Mitigation Strategy")
-        
-        result = self.mitigation.execute(
-            "data/suppliers.json",
-            self.at_risk_shipments,
-            self.disruptions
+
+        logger.info("Tier 1 complete")
+
+        logger.info("Tier 2 starting: risk_assessor + mitigation")
+        s3, c3, e3 = make_callbacks("risk_assessor")
+        s4, c4, e4 = make_callbacks("mitigation")
+
+        tier2_results = await asyncio.gather(
+            self.run_agent_async(
+                "risk_assessor",
+                lambda: self.risk_assessor.execute(
+                    self.context["disruptions"],
+                    "data/shipments.json",
+                ),
+                on_start=s3,
+                on_complete=c3,
+                on_error=e3,
+            ),
+            self.run_agent_async(
+                "mitigation",
+                lambda: self.mitigation.execute(
+                    "data/suppliers.json",
+                    self.context.get("at_risk_shipments", []),
+                    self.context["disruptions"],
+                ),
+                on_start=s4,
+                on_complete=c4,
+                on_error=e4,
+            ),
+            return_exceptions=False,
         )
-        self.results['mitigation'] = result
-        logger.info("Agent 4 complete")
-        return result
-    
-    def execute_agent_5_stakeholder_notification(self) -> Dict:
-        """Step 5: Notify stakeholders"""
-        logger.info("Starting Agent 5: Stakeholder Notification")
-        
-        # Prepare comprehensive results
+
+        risk_result = tier2_results[0] or {}
+        if "intervention_priorities" in risk_result:
+            self.context["at_risk_shipments"] = risk_result[
+                "intervention_priorities"
+            ].get("at_risk_shipments", [])
+
+        logger.info("Tier 2 complete")
+
+        logger.info("Tier 3 starting: stakeholder_notification")
+        s5, c5, e5 = make_callbacks("stakeholder_notification")
+
         analysis_results = {
-            'at_risk_shipments': self.at_risk_shipments,
-            'recommendations': self.results.get('mitigation', {}).get('mitigation_recommendations', {}).get('recommendations', ''),
-            'total_estimated_delay_hours': self.results.get('disruption_detector', {}).get('risk_assessment', {}).get('total_estimated_delay_hours', 0),
-            'total_at_risk_value': self.results.get('risk_assessor', {}).get('intervention_priorities', {}).get('at_risk_shipments', []),
-            'mitigation_costs': self.results.get('mitigation', {}).get('cost_analysis', {}).get('mitigation_costs', {})
+            "at_risk_shipments": self.context.get("at_risk_shipments", []),
+            "recommendations": self.results.get("mitigation", {})
+            .get("mitigation_recommendations", {})
+            .get("recommendations", ""),
+            "total_estimated_delay_hours": self.results.get(
+                "disruption_detector", {}
+            ).get("risk_assessment", {}).get("total_estimated_delay_hours", 0),
+            "mitigation_costs": self.results.get("mitigation", {})
+            .get("cost_analysis", {})
+            .get("mitigation_costs", {}),
         }
-        
-        result = self.stakeholder.execute(analysis_results)
-        self.results['stakeholder_notification'] = result
-        logger.info("Agent 5 complete")
-        return result
-    
+
+        await self.run_agent_async(
+            "stakeholder_notification",
+            lambda: self.stakeholder.execute(analysis_results),
+            on_start=s5,
+            on_complete=c5,
+            on_error=e5,
+        )
+
+        logger.info("Tier 3 complete")
+
+        total_ms = round((time.time() - pipeline_start) * 1000, 2)
+        summary = {
+            "total_duration_ms": total_ms,
+            "agent_times": self.agent_times,
+            "errors": self.errors,
+            "agents_succeeded": len(self.results),
+            "agents_failed": len(self.errors),
+            "results": self.results,
+        }
+
+        if on_complete:
+            await on_complete(summary)
+
+        return summary
+
     def run_full_pipeline(self):
-        """Execute all agents in orchestrated sequence"""
+        """Execute the async pipeline from a synchronous entrypoint."""
         logger.info("=" * 60)
         logger.info("SUPPLY CHAIN DISRUPTION AGENT - FULL PIPELINE")
         logger.info("=" * 60)
-        
-        try:
-            # Load data
-            self.load_data(
-                "data/suppliers.json",
-                "data/shipments.json",
-                "data/disruptions.json"
-            )
-            
-            # Execute agents sequentially
-            logger.info("\n--- PHASE 1: MONITORING ---")
-            self.execute_agent_1_supplier_monitor()
-            
-            logger.info("\n--- PHASE 2: DETECTION ---")
-            self.execute_agent_2_disruption_detector()
-            
-            logger.info("\n--- PHASE 3: ASSESSMENT ---")
-            self.execute_agent_3_risk_assessor()
-            
-            logger.info("\n--- PHASE 4: MITIGATION ---")
-            self.execute_agent_4_mitigation()
-            
-            logger.info("\n--- PHASE 5: NOTIFICATION ---")
-            self.execute_agent_5_stakeholder_notification()
-            
-            logger.info("\n" + "=" * 60)
-            logger.info("PIPELINE EXECUTION COMPLETE")
-            logger.info("=" * 60)
-            
-            return self.results
-        
-        except Exception as e:
-            logger.error(f"Pipeline execution failed: {e}")
-            raise
-    
+        self.load_data("data/suppliers.json", "data/shipments.json", "data/disruptions.json")
+        return asyncio.run(self.run_pipeline_async())
+
     def print_summary(self):
         """Print executive summary"""
         if 'stakeholder_notification' in self.results:
@@ -203,40 +318,31 @@ class SupplyChainOrchestrator:
 def main():
     """Main entry point"""
     try:
-        orchestrator = SupplyChainOrchestrator()
-        
-        # Provide guidance based on LLM mode
-        if orchestrator.llm_mode == "ollama":
+        orchestrator = AsyncSupplyChainOrchestrator()
+
+        if orchestrator.llm_mode == "none":
             print("\n" + "=" * 70)
-            print("ℹ️  CHAINPULSE SUPPLY CHAIN AGENT - OLLAMA MODE")
+            print("ℹ️  CHAINPULSE SUPPLY CHAIN AGENT - NO LLM CONFIGURED")
             print("=" * 70)
-            print("\n📌 No OpenAI API key detected. Using Ollama (local LLM)")
-            print("\n🚀 RECOMMENDED: Use Streamlit dashboards instead:")
-            print("   • Copilot Chat:        streamlit run copilot_chat.py")
-            print("   • Command Center:      streamlit run command_center.py")
-            print("   • Digital Twin:        streamlit run digital_twin.py")
-            print("   • News Intelligence:   streamlit run news_intelligence.py")
+            print("\n📌 No OpenAI API key detected or OpenAI package not installed.")
+            print("\n🚀 RECOMMENDED: Set OPENAI_API_KEY in .env and install the openai package.")
+            print("   1. Install requirements: pip install -r backend/requirements.txt")
+            print("   2. Add OPENAI_API_KEY=sk-... to .env")
             print("\n🔗 Or use the website at: http://localhost:8000")
-            print("\n💡 To use OpenAI API instead:")
-            print("   1. Edit .env file and add: OPENAI_API_KEY=sk-...")
-            print("   2. Run: python orchestrator.py")
-            print("=" * 70 + "\n")
-            return  # Don't run orchestrator in demo mode
-        
+            print("" + "=" * 70 + "\n")
+            return
+
         orchestrator.run_full_pipeline()
         orchestrator.print_summary()
-        
-        # Save results to file
+
         with open('output/pipeline_results.json', 'w') as f:
-            # Convert results to serializable format
             serializable_results = {
                 k: str(v) if not isinstance(v, (dict, list, str, int, float, bool, type(None))) else v
                 for k, v in orchestrator.results.items()
             }
             json.dump(serializable_results, f, indent=2)
-        
+
         logger.info("Results saved to output/pipeline_results.json")
-    
     except Exception as e:
         logger.error(f"Main execution failed: {e}")
         raise

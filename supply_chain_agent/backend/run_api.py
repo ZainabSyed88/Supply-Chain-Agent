@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 """
-Backend Server Launcher
-Starts the FastAPI app on port 5000
-Located at: backend/run.py
+Backend API launcher for the FastAPI app.
+Starts the Supply Chain API on port 5000.
 """
 
 import sys
 from pathlib import Path
 import uvicorn
 
-# Fix encoding for Windows console
 if sys.platform == 'win32':
     import os
-
     os.environ['PYTHONIOENCODING'] = 'utf-8'
 
 

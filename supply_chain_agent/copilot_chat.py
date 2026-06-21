@@ -62,46 +62,50 @@ kb = load_knowledge_base()
 # ============================================
 
 class SupplyChainCopilot:
-    """AI copilot for supply chain queries - powered by Ollama"""
+    """AI copilot for supply chain queries"""
     
     def __init__(self, knowledge_base):
         self.kb = knowledge_base
-        self.ollama_url = "http://localhost:11434"
-        self.ollama_model = "mistral"
-        self.ollama_available = self._check_ollama()
+        self.ai_enabled = True
     
-    def _check_ollama(self) -> bool:
-        """Check if Ollama is running"""
+    def nvidia_ask(self, question: str) -> str:
+        """Ask NVIDIA GenAI a question using conversational AI"""
         try:
-            response = requests.get(f"{self.ollama_url}/api/tags", timeout=2)
-            return response.status_code == 200
-        except:
-            return False
-    
-    def ollama_ask(self, question: str) -> str:
-        """Ask Ollama a question using conversational AI"""
-        if not self.ollama_available:
-            return None
-        
-        try:
+            import httpx
+            import os
+
+            nvidia_api_key = os.getenv("NVIDIA_API_KEY")
+            nvidia_model = os.getenv("NVIDIA_MODEL", "nvidia/omni-gpt")
+            nvidia_base_url = os.getenv("NVIDIA_BASE_URL", "https://api.nvidia.ai")
+
+            if not nvidia_api_key:
+                return None
+
             system_prompt = "You are an expert supply chain consultant. Provide concise, actionable advice. Be specific and data-focused."
-            
-            response = requests.post(
-                f"{self.ollama_url}/api/generate",
-                json={
-                    "model": self.ollama_model,
-                    "prompt": f"{system_prompt}\n\nQuestion: {question}\n\nAnswer:",
-                    "stream": False,
-                    "temperature": 0.7
+            prompt = f"{system_prompt}\n\nQuestion: {question}\n\nAnswer:"
+            url = f"{nvidia_base_url}/v1/models/{nvidia_model}:predict"
+
+            response = httpx.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {nvidia_api_key}",
+                    "Content-Type": "application/json"
                 },
-                timeout=30
+                json={
+                    "input": prompt,
+                    "temperature": 0.7,
+                    "max_tokens": 500
+                },
+                timeout=30.0
             )
-            
+
             if response.status_code == 200:
-                return response.json().get('response', '').strip()
-        except:
+                data = response.json()
+                if isinstance(data, dict):
+                    return data.get("output", "").strip() or data.get("response", "").strip()
+        except Exception:
             pass
-        
+
         return None
     
     def find_highest_risk_supplier(self) -> Dict[str, Any]:
@@ -264,7 +268,7 @@ class SupplyChainCopilot:
         """Process natural language question and return answer
         
         Uses fast rule-based responses for specific queries,
-        falls back to Ollama AI for open-ended questions.
+        asks NVIDIA GenAI for open-ended questions.
         """
         q_lower = question.lower()
         result = None
@@ -294,17 +298,14 @@ class SupplyChainCopilot:
             else:
                 result = {"error": "Could not find supplier details"}
         
-        # If no rule-based match, try Ollama AI
+        # If no rule-based match, ask NVIDIA GenAI
         if result is None:
-            if self.ollama_available:
-                ai_response = self.ollama_ask(question)
-                if ai_response:
-                    result = {"message": ai_response, "source": "🤖 AI"}
-                else:
-                    result = {"error": "Could not generate response"}
+            ai_response = self.nvidia_ask(question)
+            if ai_response:
+                result = {"message": ai_response, "source": "🤖 AI"}
             else:
                 result = {
-                    "message": "⚠️ Ollama not running. Start it with: ollama serve\n\nI can help with: Which suppliers are risky? What shipments are delayed? How much revenue is at risk? What alerts are critical? What should I do today?"
+                    "message": "⚠️ AI answer unavailable. Check NVIDIA_API_KEY and model settings.\n\nI can help with: Which suppliers are risky? What shipments are delayed? How much revenue is at risk? What alerts are critical? What should I do today?"
                 }
         
         return result
@@ -393,18 +394,17 @@ if user_question := st.chat_input("Ask about your supply chain..."):
 with st.sidebar:
     st.header("Quick Commands")
     
-    # Show Ollama status
-    if copilot.ollama_available:
-        st.success("✅ Ollama Connected - AI mode enabled")
+    # Show AI status
+    if os.getenv("NVIDIA_API_KEY"):
+        st.success("✅ NVIDIA GenAI configured - AI mode enabled")
     else:
-        st.warning("⚠️ Ollama Not Running")
+        st.warning("⚠️ NVIDIA GenAI not configured")
         st.info("""
         **To enable AI responses:**
         
-        1. Open Command Prompt/PowerShell
-        2. Run: `ollama serve`
-        3. Keep it running
-        4. Refresh this page
+        1. Open your `.env` file
+        2. Set `NVIDIA_API_KEY`
+        3. Restart this app
         
         Then ask open-ended questions!
         """)

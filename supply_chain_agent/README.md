@@ -79,58 +79,14 @@ supply_chain_agent/
 
 ## 🚀 Quick Start (NEW ORGANIZED STRUCTURE)
 
-### Option 1: Run Everything (Recommended) ⭐
-
-```bash
-# From supply_chain_agent root directory
-python run_all.py
-```
-
-This automatically starts:
-- ✅ Frontend on http://localhost:8000
-- ✅ Backend on port 5000
-
-### Option 2: Run Separately (Development)
-
-**Terminal 1 - Frontend:**
-```bash
-cd frontend
-python run.py
-```
-→ Opens **http://localhost:8000** in browser
-
-**Terminal 2 - Backend:**
-```bash
-cd backend
-python run.py
-```
-→ Backend orchestrator on **port 5000**
-
-### Option 3: Windows Batch File
-
-```bash
-START_SERVICES.bat
-```
-
-Automatically opens 2 PowerShell windows with both services.
-
----
-
-## Setup Instructions (One-Time)
-
-### 0. Create Virtual Environment (Windows PowerShell)
+### 1. Create a virtual environment
 
 ```powershell
-# Navigate to project root
-cd "c:\Users\dell\OneDrive\Desktop\my_project_hackathon"
-
-# Create virtual environment
+# From the supply_chain_agent folder
 python -m venv venv
 
-# Activate virtual environment
+# Activate the virtual environment
 .\venv\Scripts\Activate.ps1
-
-# You should see (venv) in your prompt now
 ```
 
 **If you get an execution policy error:**
@@ -138,77 +94,67 @@ python -m venv venv
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-### 1. Install Dependencies
+### 2. Install dependencies
 
 ```bash
-# Make sure venv is activated (you see (venv) in prompt)
 pip install --upgrade pip
-
-# Install all project requirements
-cd supply_chain_agent
 pip install -r backend/requirements.txt
-
-# Verify installation
-pip list
 ```
 
-### 2. Configure Environment Variables
+### 3. Configure environment variables
 
-Your `.env` file is already created with Ollama configuration:
+Create or update `.env` with your AI provider settings:
 
 ```bash
 # File: .env
-OLLAMA_ENABLED=true
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=mistral
-OPENAI_API_KEY=  # Leave blank to use Ollama
+NVIDIA_API_KEY=
+NVIDIA_MODEL=nvidia/omni-gpt
+NVIDIA_BASE_URL=https://api.nvidia.ai
+OPENAI_API_KEY=  # Optional - leave blank to use NVIDIA
+OPENAI_MODEL=gpt-4-turbo
 ```
 
-**To modify:** Edit `.env` in your project root
+### 4. Verify LLM configuration
 
-### 3. Verify Ollama is Running
+- For NVIDIA GenAI, verify your `NVIDIA_API_KEY` is set.
+- For OpenAI, verify your `OPENAI_API_KEY` is set.
+
+> Note: The backend will still start without LLM provider credentials, but the chat/LLM endpoint requires `NVIDIA_API_KEY` or `ANTHROPIC_API_KEY` to work.
+
+### 5. Run the system
 
 ```bash
-curl http://localhost:11434/api/tags
+# Recommended: run both services together
+python run_all.py
 ```
 
-You should see:
-```json
-{"models":[{"name":"mistral:latest",...}]}
+This starts:
+- ✅ Frontend on http://localhost:8000
+- ✅ Backend on port 5000
+
+#### Or run services independently
+
+**Frontend:**
+```bash
+cd frontend
+python run.py
 ```
 
-If Ollama isn't running:
-1. Download from https://ollama.ai
-2. Run: `ollama pull mistral`
-3. Ollama will start automatically on localhost:11434
+**Backend:**
+```bash
+cd backend
+python run.py
+```
 
-### 4. Run Features
-
-**❌ Note:** `python orchestrator.py` requires an OpenAI API key you don't have.
-
-**✅ Instead, run these Streamlit dashboards (no API key needed):**
+#### Windows shortcut
 
 ```bash
-# Navigate to the supply_chain_agent folder
-cd supply_chain_agent
-
-# Option 1: Run individual features
-streamlit run copilot_chat.py           # 🤖 AI Chat with Ollama
-streamlit run command_center.py         # 🏢 Global Dashboard
-streamlit run digital_twin.py           # 🔮 What-if Scenarios
-streamlit run news_intelligence.py      # 📡 Disruption Detection
-
-# Option 2: Run all at once
-python launch_all.py
-
-# Option 3: Mobile Dashboard (Flask API)
-python dashboard_api.py
+START_SERVICES.bat
 ```
 
-**Or visit the website:**
-```
-http://localhost:8000
-```
+Automatically opens two PowerShell windows with both services.
+
+---
 
 ## Key Features
 
@@ -536,7 +482,7 @@ supply_chain_agent/
 
 ---
 
-**Built with:** Python, OpenAI API, ChatGPT-4, LangChain, Ollama
+**Built with:** Python, OpenAI API, NVIDIA GenAI, ChatGPT-4, LangChain
 **For:** HCLTech-OpenAI Agentic AI Hackathon 2026
 **Architecture:** 16-Agent Multi-Tier Orchestration System
 **Status:** Production-Ready with Organized Structure 🚀
