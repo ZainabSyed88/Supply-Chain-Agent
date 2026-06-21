@@ -14,3 +14,7 @@ __pycache__/
 # Common local tooling noise
 .DS_Store
 Thumbs.db
+
+# Frontend build artifacts
+**/node_modules/
+**/dist/
