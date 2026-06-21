@@ -6,10 +6,12 @@ import { api } from "../../utils/api"
 import { ROUTE_TITLES } from "../../utils/constants"
 import { useToast } from "../ui/Toast"
 import { useWebSocket } from "../../hooks/useWebSocket"
+import { useAuth } from "../../context/AuthContext"
 
 export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user, signOut } = useAuth()
   const { showToast } = useToast()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [alerts, setAlerts] = useState([])
@@ -46,9 +48,10 @@ export default function Layout() {
       alerts,
       lastUpdatedAt,
       pipelineSummary,
-      refreshLatestRun
+      refreshLatestRun,
+      user
     }),
-    [alerts, lastUpdatedAt, pipelineSummary, refreshLatestRun]
+    [alerts, lastUpdatedAt, pipelineSummary, refreshLatestRun, user]
   )
 
   return (
@@ -61,6 +64,12 @@ export default function Layout() {
           setMobileOpen(false)
           navigate("/war-room", { state: { triggerPipeline: Date.now() } })
         }}
+        user={user}
+        onSignOut={() => {
+          signOut()
+          showToast("Signed out successfully.", "success")
+          navigate("/auth", { replace: true })
+        }}
       />
       <div className="min-h-screen md:pl-60">
         <TopBar
@@ -69,6 +78,7 @@ export default function Layout() {
           lastUpdatedAt={lastUpdatedAt}
           hasAlerts={alerts.length > 0}
           onToggleSidebar={() => setMobileOpen(true)}
+          user={user}
         />
         <main className="page-shell p-6">
           <Outlet context={outletContext} />

@@ -3,7 +3,7 @@ import { Bell, Menu } from "lucide-react"
 import StatusDot from "../ui/StatusDot"
 import { formatDateTime, formatRelativeTime } from "../../utils/formatters"
 
-export default function TopBar({ title, wsConnected, lastUpdatedAt, hasAlerts, onToggleSidebar }) {
+export default function TopBar({ title, wsConnected, lastUpdatedAt, hasAlerts, onToggleSidebar, user }) {
   const [now, setNow] = useState(new Date())
 
   useEffect(() => {
@@ -24,6 +24,11 @@ export default function TopBar({ title, wsConnected, lastUpdatedAt, hasAlerts, o
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+          {user ? (
+            <span className="rounded-md border bg-slate-50 px-3 py-2 font-medium text-slate-700">
+              {user.name}
+            </span>
+          ) : null}
           <span className="rounded-md border bg-slate-50 px-3 py-2 font-medium text-slate-700">
             {now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
           </span>

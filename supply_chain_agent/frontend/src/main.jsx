@@ -4,11 +4,14 @@ import "leaflet/dist/leaflet.css"
 import App from "./App"
 import "./index.css"
 import { ToastProvider } from "./components/ui/Toast"
+import { AuthProvider } from "./context/AuthContext"
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <ToastProvider>
-      <App />
-    </ToastProvider>
+    <AuthProvider>
+      <ToastProvider>
+        <App />
+      </ToastProvider>
+    </AuthProvider>
   </React.StrictMode>
 )

@@ -5,6 +5,7 @@ import {
   FileText,
   Globe2,
   LayoutDashboard,
+  LogOut,
   Package,
   Play,
   ShieldCheck,
@@ -26,7 +27,7 @@ const NAV_ITEMS = [
   { to: "/reports", label: "Reports", icon: FileText }
 ]
 
-export default function Sidebar({ mobileOpen, onClose, pipelineSummary, onRunPipeline }) {
+export default function Sidebar({ mobileOpen, onClose, pipelineSummary, onRunPipeline, user, onSignOut }) {
   return (
     <>
       <div
@@ -79,6 +80,13 @@ export default function Sidebar({ mobileOpen, onClose, pipelineSummary, onRunPip
         </nav>
 
         <div className="mt-auto rounded-xl border bg-slate-50 p-4">
+          {user ? (
+            <div className="mb-4 rounded-lg border bg-white px-3 py-3">
+              <p className="text-xs uppercase tracking-wide text-slate-400">Signed in as</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">{user.name}</p>
+              <p className="text-xs text-slate-500">{user.email}</p>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-slate-900">Pipeline status</p>
@@ -98,6 +106,14 @@ export default function Sidebar({ mobileOpen, onClose, pipelineSummary, onRunPip
           >
             <Play className="h-4 w-4" />
             Run Pipeline
+          </button>
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md border bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            <LogOut className="h-4 w-4" />
+            Sign Out
           </button>
           <p className="mt-3 text-center text-xs text-slate-400">v1.0.0</p>
         </div>
