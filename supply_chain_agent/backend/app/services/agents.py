@@ -5,6 +5,8 @@ from datetime import datetime
 from typing import Any
 
 from app.data.service import DataService
+from app.services.news_service import get_news_service
+from app.services.weather_service import get_weather_service
 
 
 @dataclass
@@ -54,17 +56,24 @@ class DisruptionDetectorAgent(BaseAgent):
 
 class NewsIntelligenceAgent(BaseAgent):
     async def run(self, context: AgentContext) -> AgentContext:
-        active_disruptions = context.disruptions
+        suppliers = [supplier.model_dump() for supplier in self.data_service.suppliers]
+        news_disruptions, weather_alerts = await asyncio.gather(
+            get_news_service().detect_disruptions_from_news(suppliers),
+            get_weather_service().check_weather_for_suppliers(suppliers[:10]),
+        )
+        combined = news_disruptions + weather_alerts
         headlines = [
-            f"Detected {disruption['severity']} {disruption['type']} event affecting {len(disruption['affected_supplier_ids'])} suppliers"
-            for disruption in active_disruptions
+            f"Detected {disruption['severity']} {disruption['type']} event affecting {len(disruption.get('affected_supplier_ids', []))} suppliers"
+            for disruption in combined
         ]
         context.execution_details[self.name] = {"headlines": headlines[:3]}
         context.recommendations.append(
             {
                 "agent": self.name,
-                "summary": "Monitor news and confirm disruption signals.",
+                "summary": "Monitor live news and weather disruption signals.",
                 "alerts": headlines,
+                "news_disruptions": news_disruptions,
+                "weather_alerts": weather_alerts,
             }
         )
         await asyncio.sleep(0)
@@ -90,14 +99,20 @@ class InventoryOptimizationAgent(BaseAgent):
     async def run(self, context: AgentContext) -> AgentContext:
         inventory_levels = self.data_service.get_inventory_levels()
         low_stock = [item for item in inventory_levels if item["stock_level"] < 60]
+        backlog_orders = [
+            order.model_dump()
+            for order in self.data_service.get_orders()
+            if order.status in {"pending", "allocated", "processing", "delayed"}
+        ][:8]
         context.recommendations.append(
             {
                 "agent": self.name,
                 "low_stock_items": low_stock,
+                "backlog_orders": backlog_orders,
                 "message": "Recommend reorder for low stock SKUs.",
             }
         )
-        context.execution_details[self.name] = {"low_stock_count": len(low_stock)}
+        context.execution_details[self.name] = {"low_stock_count": len(low_stock), "backlog_orders": len(backlog_orders)}
         await asyncio.sleep(0)
         return context
 
@@ -105,14 +120,20 @@ class InventoryOptimizationAgent(BaseAgent):
 class LogisticsRouteAgent(BaseAgent):
     async def run(self, context: AgentContext) -> AgentContext:
         shipments = self.data_service.get_shipments(status="in_transit")
+        warehouses = self.data_service.get_warehouses()
+        constrained_sites = [
+            warehouse.model_dump()
+            for warehouse in warehouses
+            if warehouse.storage_health in {"tight", "critical"}
+        ][:4]
         alternate_routes = [
             {"shipment_id": shipment.shipment_id, "suggested_action": "monitor route and confirm carrier"}
             for shipment in shipments[:5]
         ]
         context.recommendations.append(
-            {"agent": self.name, "routes": alternate_routes}
+            {"agent": self.name, "routes": alternate_routes, "warehouse_constraints": constrained_sites}
         )
-        context.execution_details[self.name] = {"in_transit_shipments": len(shipments)}
+        context.execution_details[self.name] = {"in_transit_shipments": len(shipments), "constrained_sites": len(constrained_sites)}
         await asyncio.sleep(0)
         return context
 
@@ -187,11 +208,19 @@ class AlternateSupplierAgent(BaseAgent):
 class DecisionSynthesisAgent(BaseAgent):
     async def run(self, context: AgentContext) -> AgentContext:
         recommendations = [entry for entry in context.recommendations if entry["agent"] != self.name]
+        warehouse_summary = self.data_service.get_warehouse_summary()
+        order_summary = self.data_service.get_order_summary()
         context.recommendations.append(
             {
                 "agent": self.name,
                 "strategy": "Synthesize decisions from tier 1-3 analysis.",
                 "summary": f"Found {len(recommendations)} upstream recommendations.",
+                "cross_functional_plan": {
+                    "procurement": "Shift high-risk demand to alternate suppliers and expedite critical materials.",
+                    "warehouse": f"Focus on {warehouse_summary['critical_warehouses']} constrained site(s) and close staffing gap of {warehouse_summary['staffing_gap']}.",
+                    "customer_orders": f"Protect {order_summary['critical_orders']} critical order(s) and clear backlog of {order_summary['backlog_orders']}.",
+                    "transport": "Review delayed lanes and rebalance carrier capacity before the next dispatch window.",
+                },
             }
         )
         context.execution_details[self.name] = {"upstream_recommendations": len(recommendations)}

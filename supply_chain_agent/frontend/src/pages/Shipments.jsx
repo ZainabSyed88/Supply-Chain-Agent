@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { AlertTriangle, CircleDot, MapPinned, Package, Truck } from "lucide-react"
 import { CircleMarker, MapContainer, Polyline, Popup, TileLayer } from "react-leaflet"
+import { useLocation, useNavigate } from "react-router-dom"
 import DataTable from "../components/shared/DataTable"
 import Badge from "../components/ui/Badge"
 import EmptyState from "../components/ui/EmptyState"
@@ -26,10 +27,14 @@ const countryCoordinates = {
 }
 
 export default function Shipments() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState("")
   const [selectedShipment, setSelectedShipment] = useState(null)
   const [analysis, setAnalysis] = useState("")
   const [analysisLoading, setAnalysisLoading] = useState(false)
+  const shipmentIds = location.state?.shipmentIds || []
+  const shipmentContextLabel = location.state?.contextLabel || ""
 
   const { data, loading, error, refetch } = useApi(
     async () => {
@@ -42,6 +47,11 @@ export default function Shipments() {
     },
     []
   )
+
+  useEffect(() => {
+    const nextFilter = location.state?.statusFilter || ""
+    setStatusFilter(nextFilter)
+  }, [location.state])
 
   useEffect(() => {
     if (!selectedShipment) return
@@ -78,18 +88,21 @@ export default function Shipments() {
       ...shipment,
       supplierName: supplierMap.get(shipment.supplier_id)?.name || shipment.supplier_id
     }))
+    const scopedShipments = shipmentIds.length
+      ? shipments.filter((shipment) => shipmentIds.includes(shipment.shipment_id))
+      : shipments
     return {
-      shipments: statusFilter ? shipments.filter((shipment) => shipment.status === statusFilter) : shipments,
+      shipments: statusFilter ? scopedShipments.filter((shipment) => shipment.status === statusFilter) : scopedShipments,
       stats: {
-        total: shipments.length,
-        in_transit: shipments.filter((shipment) => shipment.status === "in_transit").length,
-        delayed: shipments.filter((shipment) => shipment.status === "delayed").length,
-        delivered: shipments.filter((shipment) => shipment.status === "delivered").length,
-        at_risk: shipments.filter((shipment) => shipment.status === "at_risk").length
+        total: scopedShipments.length,
+        in_transit: scopedShipments.filter((shipment) => shipment.status === "in_transit").length,
+        delayed: scopedShipments.filter((shipment) => shipment.status === "delayed").length,
+        delivered: scopedShipments.filter((shipment) => shipment.status === "delivered").length,
+        at_risk: scopedShipments.filter((shipment) => shipment.status === "at_risk").length
       },
       disruptions: data.disruptions
     }
-  }, [data, statusFilter])
+  }, [data, shipmentIds, statusFilter])
 
   if (error) {
     return (
@@ -161,6 +174,25 @@ export default function Shipments() {
 
   return (
     <div className="space-y-6">
+      {shipmentIds.length || shipmentContextLabel ? (
+        <section className="flex flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-slate-700 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="font-semibold text-slate-900">Showing dashboard drilldown</p>
+            <p>
+              {shipmentContextLabel || "Filtered shipment view"}.
+              {shipmentIds.length ? ` ${shipmentIds.length} shipment${shipmentIds.length > 1 ? "s" : ""} in scope.` : ""}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/shipments", { replace: true })}
+            className="inline-flex cursor-pointer rounded-md border bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Clear filter
+          </button>
+        </section>
+      ) : null}
+
       <section className="grid gap-4 md:grid-cols-5">
         {model
           ? [

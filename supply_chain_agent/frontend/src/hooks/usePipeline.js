@@ -17,6 +17,64 @@ export function usePipeline() {
     setLogs((prev) => [entry, ...prev].slice(0, 50))
   }, [])
 
+  const hydrateRun = useCallback((run) => {
+    if (!run?.run_id) return
+
+    const normalizedStatus =
+      run.status === "queued" || run.status === "pending"
+        ? "starting"
+        : run.status === "running"
+          ? "running"
+          : run.status === "completed"
+            ? "completed"
+            : run.status === "failed"
+              ? "failed"
+              : "idle"
+
+    const entries = Object.entries(run.results || {})
+    const nextAgentTimes = {}
+    const nextAgentStates = {}
+
+    entries.forEach(([agentName, result]) => {
+      const durationMs = Number(result?.duration_ms || 0)
+      const success = result?.success ?? false
+      nextAgentTimes[agentName] = durationMs
+      nextAgentStates[agentName] = {
+        status: success ? "completed" : "failed",
+        durationMs,
+        confidence: success ? Math.max(72, 96 - Object.keys(nextAgentStates).length * 2) : undefined
+      }
+    })
+
+    const computedDuration =
+      run.started_at && run.completed_at
+        ? new Date(run.completed_at).getTime() - new Date(run.started_at).getTime()
+        : null
+
+    const nextLogs = entries.length
+      ? entries
+          .map(([agentName, result]) => ({
+            id: `${run.run_id}-${agentName}-${result?.success ? "complete" : "error"}`,
+            type: result?.success ? "success" : "error",
+            message: result?.success
+              ? `${agentName} completed in ${Number(result?.duration_ms || 0).toFixed(0)}ms.`
+              : `${agentName} failed${result?.error ? `: ${result.error}` : "."}`,
+            timestamp: run.completed_at || run.started_at || new Date().toISOString()
+          }))
+          .reverse()
+      : []
+
+    setRunId(run.run_id)
+    setStatus(normalizedStatus)
+    setProgress(normalizedStatus === "completed" ? 100 : normalizedStatus === "running" ? 15 : 0)
+    setAgentTimes(nextAgentTimes)
+    setAgentStates(nextAgentStates)
+    setLogs(nextLogs)
+    setError(run.errors?.[0] || null)
+    setCurrentAgent(null)
+    setDurationMs(computedDuration)
+  }, [])
+
   const trigger = useCallback(async () => {
     try {
       setStatus("starting")
@@ -42,6 +100,28 @@ export function usePipeline() {
       return null
     }
   }, [appendLog])
+
+  const hydrateLatest = useCallback(async () => {
+    try {
+      const latest = await api.getLatestRun()
+      hydrateRun(latest)
+      return latest
+    } catch (err) {
+      return null
+    }
+  }, [hydrateRun])
+
+  const hydrateRunId = useCallback(async (pipelineRunId) => {
+    if (!pipelineRunId) return null
+
+    try {
+      const run = await api.getPipelineStatus(pipelineRunId)
+      hydrateRun(run)
+      return run
+    } catch (err) {
+      return null
+    }
+  }, [hydrateRun])
 
   const updateFromEvent = useCallback((event) => {
     if (!event?.event) return
@@ -150,6 +230,8 @@ export function usePipeline() {
     durationMs,
     performanceData,
     trigger,
-    updateFromEvent
+    updateFromEvent,
+    hydrateLatest,
+    hydrateRunId
   }
 }

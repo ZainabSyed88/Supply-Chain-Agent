@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react"
-import { Bell, Menu } from "lucide-react"
+import { Bell, Menu, PlusCircle } from "lucide-react"
 import StatusDot from "../ui/StatusDot"
 import { formatDateTime, formatRelativeTime } from "../../utils/formatters"
 
-export default function TopBar({ title, wsConnected, lastUpdatedAt, hasAlerts, onToggleSidebar, user }) {
+export default function TopBar({ title, wsConnected, lastUpdatedAt, hasAlerts, onToggleSidebar, onReportIssue, user }) {
   const [now, setNow] = useState(new Date())
 
   useEffect(() => {
@@ -25,9 +25,10 @@ export default function TopBar({ title, wsConnected, lastUpdatedAt, hasAlerts, o
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
           {user ? (
-            <span className="rounded-md border bg-slate-50 px-3 py-2 font-medium text-slate-700">
-              {user.name}
-            </span>
+            <div className="rounded-md border bg-slate-50 px-3 py-2 text-slate-700">
+              <p className="font-medium">{user.full_name || user.name}</p>
+              <p className="text-xs uppercase tracking-wide text-slate-400">{user.role}</p>
+            </div>
           ) : null}
           <span className="rounded-md border bg-slate-50 px-3 py-2 font-medium text-slate-700">
             {now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
@@ -39,6 +40,14 @@ export default function TopBar({ title, wsConnected, lastUpdatedAt, hasAlerts, o
           <span className="rounded-md border bg-slate-50 px-3 py-2" title={formatDateTime(lastUpdatedAt)}>
             Last updated {formatRelativeTime(lastUpdatedAt)}
           </span>
+          <button
+            type="button"
+            onClick={onReportIssue}
+            className="inline-flex items-center gap-2 rounded-md border bg-white px-3 py-2 text-slate-700 transition hover:bg-slate-50"
+          >
+            <PlusCircle className="h-4 w-4" />
+            Report issue
+          </button>
           <button type="button" className="relative rounded-md border bg-slate-50 p-2.5 text-slate-600 transition hover:bg-slate-100">
             <Bell className="h-4 w-4" />
             {hasAlerts ? <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" /> : null}

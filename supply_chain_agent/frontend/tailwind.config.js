@@ -1,16 +1,16 @@
 export default {
-  content: ["./index.html", "./src/**/*.{js,jsx}"],
+  content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"]
+      },
       colors: {
         primary: { DEFAULT: "#1e40af", light: "#3b82f6", dark: "#1e3a8a" },
         success: "#10b981",
         warning: "#f59e0b",
         danger: "#ef4444",
         brand: "#1e40af"
-      },
-      fontFamily: {
-        sans: ["Inter", "sans-serif"]
       },
       boxShadow: {
         card: "0 1px 2px 0 rgba(15, 23, 42, 0.06)",
@@ -36,5 +36,6 @@ export default {
         }
       }
     }
-  }
+  },
+  plugins: []
 }

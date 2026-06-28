@@ -6,13 +6,17 @@ import random
 
 from app.data.mock_generator import (
     generate_disruptions,
+    generate_orders,
     generate_shipments,
     generate_suppliers,
     generate_demand_history,
+    generate_warehouses,
 )
 from app.models.disruption import Disruption
+from app.models.order import Order
 from app.models.shipment import Shipment
 from app.models.supplier import Supplier
+from app.models.warehouse import Warehouse
 
 COUNTRY_COORDINATES = {
     "China": {"lat": 35.8617, "lng": 104.1954},
@@ -42,6 +46,8 @@ class DataService:
         self._inventory = {
             sku_id: random.randint(40, 220) for sku_id in self._demand_history.keys()
         }
+        self._warehouses = generate_warehouses()
+        self._orders = generate_orders(self._shipments, self._inventory, self._warehouses)
 
     @property
     def suppliers(self) -> list[Supplier]:
@@ -58,6 +64,14 @@ class DataService:
     @property
     def inventory(self) -> dict[str, int]:
         return self._inventory
+
+    @property
+    def orders(self) -> list[Order]:
+        return self._orders
+
+    @property
+    def warehouses(self) -> list[Warehouse]:
+        return self._warehouses
 
     @lru_cache(maxsize=128)
     def get_suppliers(self, risk_threshold: float | None = None, category: str | None = None) -> list[Supplier]:
@@ -84,6 +98,37 @@ class DataService:
         return next((shipment for shipment in self._shipments if shipment.shipment_id == shipment_id), None)
 
     @lru_cache(maxsize=128)
+    def get_orders(
+        self,
+        status: str | None = None,
+        priority: str | None = None,
+        warehouse_id: str | None = None,
+    ) -> list[Order]:
+        results = self._orders
+        if status is not None:
+            results = [order for order in results if order.status == status]
+        if priority is not None:
+            results = [order for order in results if order.priority == priority]
+        if warehouse_id is not None:
+            results = [order for order in results if order.warehouse_id == warehouse_id]
+        return results
+
+    def get_order(self, order_id: str) -> Order | None:
+        return next((order for order in self._orders if order.order_id == order_id), None)
+
+    @lru_cache(maxsize=64)
+    def get_warehouses(self, region: str | None = None, health: str | None = None) -> list[Warehouse]:
+        results = self._warehouses
+        if region is not None:
+            results = [warehouse for warehouse in results if warehouse.region == region]
+        if health is not None:
+            results = [warehouse for warehouse in results if warehouse.storage_health == health]
+        return results
+
+    def get_warehouse(self, warehouse_id: str) -> Warehouse | None:
+        return next((warehouse for warehouse in self._warehouses if warehouse.warehouse_id == warehouse_id), None)
+
+    @lru_cache(maxsize=128)
     def get_disruptions(self, severity: str | None = None, active_only: bool = True) -> list[Disruption]:
         results = self._disruptions
         if severity is not None:
@@ -101,6 +146,11 @@ class DataService:
         critical_disruptions = len(self.get_disruptions(severity="critical", active_only=True))
         avg_risk_score = round(sum(s.risk_score for s in self._suppliers) / max(total_suppliers, 1), 2)
         total_value = round(sum(s.value_usd for s in self._shipments), 2)
+        open_orders = len([order for order in self._orders if order.status in {"pending", "allocated", "processing", "delayed"}])
+        warehouse_utilization = round(
+            sum(warehouse.utilization_rate for warehouse in self._warehouses) / max(len(self._warehouses), 1),
+            2,
+        )
         return {
             "total_suppliers": total_suppliers,
             "active_disruptions": active_disruptions,
@@ -108,6 +158,8 @@ class DataService:
             "critical_disruptions": critical_disruptions,
             "average_supplier_risk": avg_risk_score,
             "total_shipment_value_usd": total_value,
+            "open_orders": open_orders,
+            "warehouse_utilization_rate": warehouse_utilization,
         }
 
     @lru_cache(maxsize=64)
@@ -141,6 +193,36 @@ class DataService:
             for sku_id, quantity in self._inventory.items()
             if quantity < 50
         ]
+
+    def get_order_summary(self) -> dict[str, object]:
+        backlog = [order for order in self._orders if order.status in {"pending", "allocated", "processing", "delayed"}]
+        delayed = [order for order in self._orders if order.status == "delayed"]
+        critical = [order for order in backlog if order.priority == "critical"]
+        avg_fill_rate = round(
+            sum(min(1, order.inventory_available / order.quantity) for order in self._orders) / max(len(self._orders), 1),
+            2,
+        )
+        return {
+            "total_orders": len(self._orders),
+            "backlog_orders": len(backlog),
+            "delayed_orders": len(delayed),
+            "critical_orders": len(critical),
+            "average_fill_rate": avg_fill_rate,
+        }
+
+    def get_warehouse_summary(self) -> dict[str, object]:
+        critical_sites = [warehouse for warehouse in self._warehouses if warehouse.storage_health == "critical"]
+        avg_picking_efficiency = round(
+            sum(warehouse.picking_efficiency for warehouse in self._warehouses) / max(len(self._warehouses), 1),
+            2,
+        )
+        staffing_gap = sum(max(0, warehouse.staff_required - warehouse.staff_scheduled) for warehouse in self._warehouses)
+        return {
+            "total_warehouses": len(self._warehouses),
+            "critical_warehouses": len(critical_sites),
+            "average_picking_efficiency": avg_picking_efficiency,
+            "staffing_gap": staffing_gap,
+        }
 
     def get_demand_overview(self) -> list[dict[str, object]]:
         sku_ids = sorted(self._demand_history.keys())[:6]
@@ -290,6 +372,24 @@ class DataService:
                 "severity": "medium" if shipment.delay_days < 3 else "high",
                 "title": f"Shipment {shipment.shipment_id} is delayed",
                 "description": f"Delay is currently {shipment.delay_days} day(s).",
+            })
+
+        for order in self.get_orders(status="delayed")[:5]:
+            anomalies.append({
+                "id": order.order_id,
+                "type": "order",
+                "severity": "high" if order.priority in {"high", "critical"} else "medium",
+                "title": f"Order {order.order_id} is delayed",
+                "description": f"{order.quantity} units of {order.sku_id} are behind the promised date.",
+            })
+
+        for warehouse in self.get_warehouses(health="critical")[:4]:
+            anomalies.append({
+                "id": warehouse.warehouse_id,
+                "type": "warehouse",
+                "severity": "high",
+                "title": f"{warehouse.name} is capacity constrained",
+                "description": f"Utilization is at {round(warehouse.utilization_rate * 100)}% with {warehouse.pending_shipments} pending shipments.",
             })
         return anomalies
 

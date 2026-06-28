@@ -13,10 +13,12 @@ import { api } from "../utils/api"
 import { compactId, formatDateTime, formatRelativeTime } from "../utils/formatters"
 
 export default function Reports() {
-  const { refreshLatestRun } = useOutletContext()
+  const { refreshLatestRun, user } = useOutletContext()
   const [selectedRunId, setSelectedRunId] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [downloadError, setDownloadError] = useState("")
   const pipeline = usePipeline()
+  const canRunPipeline = ["admin", "analyst"].includes(user?.role)
 
   const { data, loading, error, refetch } = useApi(
     async () => {
@@ -105,9 +107,9 @@ export default function Reports() {
       sortable: false,
       render: (run) => (
         <div className="flex gap-3 text-sm font-semibold text-primary">
-          <a href={api.getReportUrl(run.run_id)} target="_blank" rel="noreferrer">
+          <button type="button" onClick={() => handleDownload(run.run_id)}>
             Download PDF
-          </a>
+          </button>
           <button type="button" onClick={() => setSelectedRunId(run.run_id)}>
             View Summary
           </button>
@@ -116,23 +118,46 @@ export default function Reports() {
     }
   ]
 
+  const handleDownload = async (runId) => {
+    setDownloadError("")
+    try {
+      const blob = await api.downloadReport(runId)
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.download = `chainpulse-report-${runId}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      setDownloadError(err.message || "Unable to download the PDF report.")
+    }
+  }
+
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr,400px]">
       <div className="space-y-6">
         <section className="rounded-lg border bg-white p-5 shadow-card">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <button
-                type="button"
-                onClick={async () => {
-                  setModalOpen(true)
-                  await pipeline.trigger()
-                }}
-                className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white"
-              >
-                <PlayCircle className="h-4 w-4" />
-                Generate New Report
-              </button>
+              {canRunPipeline ? (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setModalOpen(true)
+                    await pipeline.trigger()
+                  }}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white"
+                >
+                  <PlayCircle className="h-4 w-4" />
+                  Generate New Report
+                </button>
+              ) : (
+                <div className="rounded-md border bg-slate-50 px-4 py-2.5 text-sm text-slate-500">
+                  Viewer access: download existing reports only
+                </div>
+              )}
             </div>
             <p className="text-sm text-slate-500">
               Last report: {data?.history?.[0]?.started_at ? formatRelativeTime(data.history[0].started_at) : "No reports yet"}
@@ -152,6 +177,7 @@ export default function Reports() {
             onRowClick={(run) => setSelectedRunId(run.run_id)}
           />
         )}
+        {downloadError ? <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{downloadError}</div> : null}
       </div>
 
       <aside className="rounded-lg border bg-white p-5 shadow-card">
@@ -199,15 +225,14 @@ export default function Reports() {
                 ))}
               </div>
             </div>
-            <a
-              href={api.getReportUrl(selectedRun.run_id)}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => handleDownload(selectedRun.run_id)}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white"
             >
               <FileDown className="h-4 w-4" />
               Download PDF
-            </a>
+            </button>
           </div>
         ) : (
           <div className="mt-6">
@@ -234,15 +259,14 @@ export default function Reports() {
             {!pipeline.logs.length ? <Spinner /> : null}
           </div>
           {pipeline.status === "completed" && pipeline.runId ? (
-            <a
-              href={api.getReportUrl(pipeline.runId)}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              type="button"
+              onClick={() => handleDownload(pipeline.runId)}
               className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white"
             >
               <FileDown className="h-4 w-4" />
               Report Ready! Download PDF
-            </a>
+            </button>
           ) : null}
         </div>
       </Modal>

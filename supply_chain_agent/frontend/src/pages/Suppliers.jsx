@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
 import { BarChart3, Download, Factory, RefreshCw, ShieldAlert } from "lucide-react"
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import DataTable from "../components/shared/DataTable"
@@ -27,12 +28,34 @@ function SupplierMetric({ label, value }) {
 }
 
 export default function Suppliers() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [category, setCategory] = useState("")
   const [riskFilter, setRiskFilter] = useState("")
   const [selectedSupplier, setSelectedSupplier] = useState(null)
   const [activeTab, setActiveTab] = useState("overview")
   const [analysis, setAnalysis] = useState("")
   const [analysisLoading, setAnalysisLoading] = useState(false)
+  const [autoOpenedKey, setAutoOpenedKey] = useState("")
+  const affectedSupplierIds = location.state?.affectedSupplierIds || []
+  const disruptionLabel = location.state?.disruptionLabel || ""
+  const supplierContextLabel = location.state?.contextLabel || ""
+  const drilldownKey = `${affectedSupplierIds.join(",")}::${disruptionLabel}`
+
+  useEffect(() => {
+    setRiskFilter(location.state?.riskFilter || "")
+  }, [location.state])
+
+  useEffect(() => {
+    if (!affectedSupplierIds.length) {
+      setAutoOpenedKey("")
+      return
+    }
+
+    if (drilldownKey !== autoOpenedKey) {
+      setAutoOpenedKey("")
+    }
+  }, [affectedSupplierIds.length, autoOpenedKey, drilldownKey])
 
   const { data, loading, error, refetch } = useApi(
     async () => {
@@ -76,6 +99,17 @@ export default function Suppliers() {
     }
   }, [selectedSupplier])
 
+  useEffect(() => {
+    if (!data?.suppliers?.length || !affectedSupplierIds.length || selectedSupplier || autoOpenedKey === drilldownKey) return
+
+    const firstAffectedSupplier = data.suppliers.find((supplier) => affectedSupplierIds.includes(supplier.supplier_id))
+    if (firstAffectedSupplier) {
+      setSelectedSupplier(firstAffectedSupplier)
+      setActiveTab("overview")
+      setAutoOpenedKey(drilldownKey)
+    }
+  }, [affectedSupplierIds, autoOpenedKey, data, drilldownKey, selectedSupplier])
+
   const model = useMemo(() => {
     if (!data) return null
     const enriched = data.suppliers.map((supplier) => ({
@@ -96,7 +130,8 @@ export default function Suppliers() {
               : riskFilter === "medium"
                 ? supplier.risk_score > 40 && supplier.risk_score <= 65
                 : supplier.risk_score <= 40
-      return categoryMatch && riskMatch
+      const affectedMatch = affectedSupplierIds.length ? affectedSupplierIds.includes(supplier.supplier_id) : true
+      return categoryMatch && riskMatch && affectedMatch
     })
 
     return {
@@ -109,7 +144,7 @@ export default function Suppliers() {
         critical: enriched.filter((supplier) => supplier.risk_score > 80).length
       }
     }
-  }, [category, data, riskFilter])
+  }, [affectedSupplierIds, category, data, riskFilter])
 
   const selectedShipments = useMemo(
     () => data?.shipments.filter((shipment) => shipment.supplier_id === selectedSupplier?.supplier_id) || [],
@@ -245,6 +280,26 @@ export default function Suppliers() {
 
   return (
     <div className="space-y-6">
+      {affectedSupplierIds.length || supplierContextLabel ? (
+        <section className="flex flex-col gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-slate-700 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="font-semibold text-slate-900">{affectedSupplierIds.length ? "Showing affected suppliers" : "Showing dashboard drilldown"}</p>
+            <p>
+              {affectedSupplierIds.length
+                ? `Filtered to ${affectedSupplierIds.length} supplier${affectedSupplierIds.length > 1 ? "s" : ""} from ${disruptionLabel || "the selected disruption"}.`
+                : supplierContextLabel}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate("/suppliers", { replace: true })}
+            className="inline-flex cursor-pointer rounded-md border bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+          >
+            Clear filter
+          </button>
+        </section>
+      ) : null}
+
       <section className="grid gap-4 md:grid-cols-4">
         {model
           ? [

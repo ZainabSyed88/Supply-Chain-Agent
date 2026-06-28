@@ -26,8 +26,11 @@ export const ROUTE_TITLES = {
   "/dashboard": "Dashboard",
   "/war-room": "War Room",
   "/map": "Supply Chain Map",
+  "/support": "Support Tickets",
+  "/orders": "Orders",
   "/suppliers": "Suppliers",
   "/shipments": "Shipments",
+  "/warehouses": "Warehouses",
   "/chat": "Copilot",
   "/esg": "ESG Dashboard",
   "/reports": "Reports"

@@ -1,9 +1,30 @@
 import clsx from "clsx"
 import Spinner from "./Spinner"
 
-export default function KPICard({ title, value, subtitle, icon: Icon, trend, color = "bg-blue-50 text-blue-700", loading }) {
+export default function KPICard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  trend,
+  color = "bg-blue-50 text-blue-700",
+  loading,
+  onClick,
+  hint
+}) {
+  const interactive = typeof onClick === "function"
+
   return (
-    <div className="rounded-lg border bg-white p-5 shadow-card transition hover:shadow-md">
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!interactive || loading}
+      className={clsx(
+        "w-full rounded-lg border bg-white p-5 text-left shadow-card transition",
+        interactive ? "cursor-pointer hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/20" : "cursor-default",
+        !interactive && "disabled:pointer-events-none"
+      )}
+    >
       {loading ? (
         <div className="flex min-h-[126px] items-center justify-center">
           <Spinner />
@@ -29,9 +50,10 @@ export default function KPICard({ title, value, subtitle, icon: Icon, trend, col
             <p className="text-sm font-medium text-slate-500">{title}</p>
             <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
             {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
+            {hint ? <p className="mt-3 text-xs font-medium text-primary">{hint}</p> : null}
           </div>
         </div>
       )}
-    </div>
+    </button>
   )
 }

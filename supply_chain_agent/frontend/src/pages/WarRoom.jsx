@@ -96,6 +96,9 @@ export default function WarRoom() {
     (payload) => {
       if (payload.event !== "ping" && payload.event !== "pong") {
         pipeline.updateFromEvent(payload)
+        if (payload.event === "pipeline_complete" && (!payload.agent_times || !Object.keys(payload.agent_times).length) && payload.run_id) {
+          pipeline.hydrateRunId(payload.run_id)
+        }
         if (payload.event === "pipeline_complete") {
           refreshLatestRun?.()
         }
@@ -110,6 +113,11 @@ export default function WarRoom() {
     triggeredRef.current = triggerKey
     pipeline.trigger()
   }, [location.state, pipeline])
+
+  useEffect(() => {
+    if (pipeline.runId) return
+    pipeline.hydrateLatest()
+  }, [pipeline.hydrateLatest, pipeline.runId])
 
   const chartData = useMemo(
     () =>

@@ -1,12 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import { Check, Copy, MessageSquareText, Plus, Send, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react"
-import { useLocation } from "react-router-dom"
+import { Check, Copy, FileDown, Mic, MicOff, Plus, Send, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react"
+import { useLocation, useOutletContext } from "react-router-dom"
 import clsx from "clsx"
 import Spinner from "../components/ui/Spinner"
 import { api } from "../utils/api"
-import { FOLLOW_UPS } from "../utils/constants"
 
 const STORAGE_KEY = "chainpulse-chat-sessions"
+const SUGGESTED_QUESTIONS = [
+  "Which suppliers are highest risk right now?",
+  "Show me all delayed shipments and their impact",
+  "Which disruption has the highest revenue impact?",
+  "Draft an email to our riskiest supplier",
+  "What is our total revenue at risk?",
+  "Give me an executive summary of supply chain health",
+  "Which suppliers should I switch away from?",
+  "What would happen if our top supplier failed?",
+  "Show me suppliers by risk score ranking",
+  "Which shipments are delayed in the next 7 days?"
+]
 
 const createSession = () => ({
   id: `${Date.now()}`,
@@ -15,10 +26,30 @@ const createSession = () => ({
   messages: []
 })
 
+const getConfidenceValue = (message) => (typeof message.confidence === "number" ? message.confidence : null)
+
+const getConfidenceLabel = (message) => {
+  if (typeof message.confidence === "string") return message.confidence
+  if (typeof message.confidence === "number" && message.confidence > 0) {
+    return `${Math.round(message.confidence * 100)}% confidence`
+  }
+  return null
+}
+
+const getConfidenceBadgeClass = (confidence) => {
+  if (typeof confidence !== "number") return "bg-slate-100 text-slate-500"
+  if (confidence > 0.85) return "bg-emerald-100 text-emerald-700"
+  if (confidence > 0.7) return "bg-amber-100 text-amber-700"
+  return "bg-slate-100 text-slate-500"
+}
+
 export default function Chat() {
   const location = useLocation()
+  const { refreshLatestRun } = useOutletContext()
   const bottomRef = useRef(null)
   const promptRef = useRef(null)
+  const recognitionRef = useRef(null)
+  const listeningSeedRef = useRef("")
   const [sessions, setSessions] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY)
     return saved ? JSON.parse(saved) : [createSession()]
@@ -32,6 +63,11 @@ export default function Chat() {
   const [loading, setLoading] = useState(false)
   const [includeLiveData, setIncludeLiveData] = useState(true)
   const [copiedId, setCopiedId] = useState(null)
+  const [isListening, setIsListening] = useState(false)
+  const [speechSupported, setSpeechSupported] = useState(false)
+  const [speechMessage, setSpeechMessage] = useState("")
+  const [reportLoading, setReportLoading] = useState(false)
+  const [reportMessage, setReportMessage] = useState("")
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions))
@@ -53,6 +89,64 @@ export default function Chat() {
     setDraft(prompt)
   }, [location.state])
 
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setSpeechSupported(false)
+      setSpeechMessage("Voice input is not supported in this browser.")
+      return undefined
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.lang = "en-US"
+
+    recognition.onstart = () => {
+      setIsListening(true)
+      setSpeechMessage("Listening...")
+    }
+
+    recognition.onresult = (event) => {
+      let finalTranscript = ""
+      let interimTranscript = ""
+
+      for (let index = event.resultIndex; index < event.results.length; index += 1) {
+        const transcript = event.results[index][0]?.transcript || ""
+        if (event.results[index].isFinal) {
+          finalTranscript += transcript
+        } else {
+          interimTranscript += transcript
+        }
+      }
+
+      const base = listeningSeedRef.current.trim()
+      const transcript = `${finalTranscript} ${interimTranscript}`.trim()
+      setDraft([base, transcript].filter(Boolean).join(base && transcript ? "\n" : ""))
+    }
+
+    recognition.onerror = (event) => {
+      setIsListening(false)
+      setSpeechMessage(event.error === "not-allowed" ? "Microphone permission was blocked." : "Voice input stopped unexpectedly.")
+    }
+
+    recognition.onend = () => {
+      setIsListening(false)
+      setSpeechMessage((current) => (current === "Listening..." ? "Voice input paused." : current))
+    }
+
+    recognitionRef.current = recognition
+    setSpeechSupported(true)
+    setSpeechMessage("Tap the mic to dictate your prompt.")
+
+    return () => {
+      recognition.stop()
+      recognitionRef.current = null
+    }
+  }, [])
+
   const updateActiveSession = (updater) => {
     setSessions((prev) =>
       prev.map((session) => (session.id === activeSession.id ? updater(session) : session))
@@ -66,14 +160,86 @@ export default function Chat() {
     setDraft("")
   }
 
+  const toggleVoiceInput = () => {
+    const recognition = recognitionRef.current
+    if (!recognition) return
+
+    if (isListening) {
+      recognition.stop()
+      return
+    }
+
+    listeningSeedRef.current = draft
+    setSpeechMessage("")
+    recognition.start()
+  }
+
+  const waitForPipelineCompletion = async (runId) => {
+    const startedAt = Date.now()
+
+    while (Date.now() - startedAt < 120000) {
+      const run = await api.getPipelineStatus(runId)
+
+      if (run.status === "completed") {
+        return run
+      }
+
+      if (run.status === "failed") {
+        throw new Error(run.errors?.[0] || "Pipeline run failed while generating the PDF report.")
+      }
+
+      await new Promise((resolve) => window.setTimeout(resolve, 2000))
+    }
+
+    throw new Error("PDF report generation timed out. Please try again from Reports.")
+  }
+
+  const downloadReport = async (runId) => {
+    const blob = await api.downloadReport(runId)
+    const link = document.createElement("a")
+    link.href = URL.createObjectURL(blob)
+    link.download = `chainpulse-report-${runId}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(link.href)
+  }
+
+  const generatePdfReport = async () => {
+    if (reportLoading) return
+
+    setReportLoading(true)
+    setReportMessage("Starting report pipeline...")
+
+    try {
+      const result = await api.runPipeline()
+      setReportMessage("Generating PDF report...")
+      const run = await waitForPipelineCompletion(result.run_id)
+      await downloadReport(run.run_id)
+      await refreshLatestRun?.()
+      setReportMessage("PDF report is ready and downloading.")
+    } catch (err) {
+      setReportMessage(err.message || "Unable to generate the PDF report.")
+    } finally {
+      setReportLoading(false)
+    }
+  }
+
   const sendMessage = async (messageText = draft) => {
     const trimmed = messageText.trim()
     if (!trimmed || loading) return
+    const sessionId = activeSession.id
+    const history = activeSession.messages.slice(-6).map((message) => ({
+      role: message.role,
+      content: message.content,
+      session_id: sessionId
+    }))
 
     const userMessage = {
       id: `${Date.now()}-user`,
       role: "user",
-      content: trimmed
+      content: trimmed,
+      timestamp: new Date().toISOString()
     }
 
     updateActiveSession((session) => ({
@@ -86,18 +252,17 @@ export default function Chat() {
     setLoading(true)
 
     try {
-      const response = await api.chat(
-        includeLiveData ? `${trimmed}\n\nUse current ChainPulse platform data when relevant.` : trimmed,
-        activeSession.messages
-      )
+      const response = await api.chat(trimmed, history, sessionId, includeLiveData)
       const aiMessage = {
         id: `${Date.now()}-ai`,
         role: "assistant",
         content: response.response,
-        confidence: `${Math.max(84, 97 - activeSession.messages.length)}% confidence`,
-        sources: includeLiveData ? "Based on live dataset and current pipeline context" : "Based on current conversation context",
+        confidence: response.confidence,
+        modelUsed: response.model_used,
+        contextUsed: response.context_used,
         feedback: null,
-        followUps: FOLLOW_UPS
+        followUps: response.follow_up_questions || [],
+        timestamp: new Date().toISOString()
       }
       updateActiveSession((session) => ({
         ...session,
@@ -108,11 +273,11 @@ export default function Chat() {
       const fallbackMessage = {
         id: `${Date.now()}-fallback`,
         role: "assistant",
-        content: `Copilot is currently unavailable. ${err.message}`,
-        confidence: "Service unavailable",
-        sources: "No LLM response returned",
+        content: "Sorry, I couldn't connect to the backend. Please check the API is running.",
+        confidence: 0,
         feedback: null,
-        followUps: FOLLOW_UPS
+        followUps: [],
+        timestamp: new Date().toISOString()
       }
       updateActiveSession((session) => ({
         ...session,
@@ -139,14 +304,7 @@ export default function Chat() {
         <div className="mt-6">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Suggested questions</p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {[
-              "Which supplier is highest risk?",
-              "What shipments are delayed?",
-              "Show financial impact",
-              "Draft email to top risk supplier",
-              "What's our carbon footprint?",
-              "Simulate supplier failure"
-            ].map((question) => (
+            {SUGGESTED_QUESTIONS.map((question) => (
               <button
                 key={question}
                 type="button"
@@ -197,42 +355,63 @@ export default function Chat() {
                   <p className="whitespace-pre-wrap text-sm leading-7">{message.content}</p>
                   {message.role === "assistant" ? (
                     <div className="mt-4 space-y-3 border-t pt-3">
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-primary">{message.confidence}</span>
-                        <span>{message.sources}</span>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            await navigator.clipboard.writeText(message.content)
-                            setCopiedId(message.id)
-                            window.setTimeout(() => setCopiedId(null), 1500)
-                          }}
-                          className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
-                        >
-                          {copiedId === message.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                          Copy
-                        </button>
-                        <button type="button" className="rounded-full border p-2 text-slate-600 hover:bg-slate-50">
-                          <ThumbsUp className="h-3.5 w-3.5" />
-                        </button>
-                        <button type="button" className="rounded-full border p-2 text-slate-600 hover:bg-slate-50">
-                          <ThumbsDown className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {message.followUps?.map((followUp) => (
-                          <button
-                            key={followUp}
-                            type="button"
-                            onClick={() => setDraft(followUp)}
-                            className="rounded-full bg-slate-100 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-200"
-                          >
-                            {followUp}
-                          </button>
-                        ))}
-                      </div>
+                      {(() => {
+                        const confidenceValue = getConfidenceValue(message)
+                        const confidenceLabel = getConfidenceLabel(message)
+                        const followUps = message.followUps || message.follow_ups || []
+                        const modelUsed = message.modelUsed || message.model_used
+                        const hasContext = Boolean(message.contextUsed || message.context_used)
+                        const sourceText = message.sources
+
+                        return (
+                          <>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                              {confidenceLabel ? (
+                                <span className={clsx("rounded-full px-2.5 py-1 font-medium", getConfidenceBadgeClass(confidenceValue))}>
+                                  {confidenceLabel}
+                                </span>
+                              ) : null}
+                              {hasContext ? <span>Based on live dataset and current pipeline context</span> : null}
+                              {!hasContext && sourceText ? <span>{sourceText}</span> : null}
+                              {modelUsed ? <span className="text-slate-400">{modelUsed}</span> : null}
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  await navigator.clipboard.writeText(message.content)
+                                  setCopiedId(message.id)
+                                  window.setTimeout(() => setCopiedId(null), 1500)
+                                }}
+                                className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+                              >
+                                {copiedId === message.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                                Copy
+                              </button>
+                              <button type="button" className="rounded-full border p-2 text-slate-600 hover:bg-slate-50">
+                                <ThumbsUp className="h-3.5 w-3.5" />
+                              </button>
+                              <button type="button" className="rounded-full border p-2 text-slate-600 hover:bg-slate-50">
+                                <ThumbsDown className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                            {followUps.length ? (
+                              <div className="flex flex-wrap gap-2">
+                                {followUps.map((followUp) => (
+                                  <button
+                                    key={followUp}
+                                    type="button"
+                                    onClick={() => sendMessage(followUp)}
+                                    className="rounded-full bg-slate-100 px-3 py-1.5 text-left text-xs text-slate-600 hover:bg-blue-50 hover:text-blue-700"
+                                  >
+                                    {followUp}
+                                  </button>
+                                ))}
+                              </div>
+                            ) : null}
+                          </>
+                        )
+                      })()}
                     </div>
                   ) : null}
                 </div>
@@ -258,21 +437,36 @@ export default function Chat() {
               <input type="checkbox" checked={includeLiveData} onChange={(event) => setIncludeLiveData(event.target.checked)} />
               Include live data
             </label>
-            <button
-              type="button"
-              onClick={() =>
-                updateActiveSession((session) => ({
-                  ...session,
-                  messages: [],
-                  updatedAt: new Date().toISOString(),
-                  title: "New conversation"
-                }))
-              }
-              className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-            >
-              <Trash2 className="h-4 w-4" />
-              Clear chat
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={generatePdfReport}
+                disabled={reportLoading}
+                className="inline-flex items-center gap-2 rounded-md border border-primary/20 bg-blue-50 px-3 py-2 text-sm font-semibold text-primary hover:bg-blue-100 disabled:opacity-60"
+              >
+                <FileDown className="h-4 w-4" />
+                {reportLoading ? "Generating PDF..." : "Generate PDF"}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  updateActiveSession((session) => ({
+                    ...session,
+                    messages: [],
+                    updatedAt: new Date().toISOString(),
+                    title: "New conversation"
+                  }))
+                }
+                className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                Clear chat
+              </button>
+            </div>
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500">
+            <span>{reportMessage || speechMessage}</span>
+            {isListening ? <span className="font-medium text-emerald-600">Mic active</span> : null}
           </div>
           <div className="flex gap-3">
             <textarea
@@ -288,6 +482,20 @@ export default function Chat() {
               placeholder="Ask ChainPulse Copilot anything about suppliers, shipments, risks, or ESG..."
               className="min-h-[88px] flex-1 rounded-xl border px-4 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
             />
+            <button
+              type="button"
+              onClick={toggleVoiceInput}
+              disabled={!speechSupported}
+              className={clsx(
+                "inline-flex h-fit items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60",
+                isListening ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              )}
+              aria-label={isListening ? "Stop voice input" : "Start voice input"}
+              title={speechSupported ? "Use voice input" : "Voice input is not supported in this browser"}
+            >
+              {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              {isListening ? "Stop" : "Voice"}
+            </button>
             <button
               type="button"
               onClick={() => sendMessage()}

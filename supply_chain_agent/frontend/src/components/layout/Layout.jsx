@@ -6,7 +6,7 @@ import { api } from "../../utils/api"
 import { ROUTE_TITLES } from "../../utils/constants"
 import { useToast } from "../ui/Toast"
 import { useWebSocket } from "../../hooks/useWebSocket"
-import { useAuth } from "../../context/AuthContext"
+import { useAuth } from "../../hooks/useAuth"
 
 export default function Layout() {
   const location = useLocation()
@@ -65,8 +65,8 @@ export default function Layout() {
           navigate("/war-room", { state: { triggerPipeline: Date.now() } })
         }}
         user={user}
-        onSignOut={() => {
-          signOut()
+        onSignOut={async () => {
+          await signOut()
           showToast("Signed out successfully.", "success")
           navigate("/auth", { replace: true })
         }}
@@ -78,6 +78,7 @@ export default function Layout() {
           lastUpdatedAt={lastUpdatedAt}
           hasAlerts={alerts.length > 0}
           onToggleSidebar={() => setMobileOpen(true)}
+          onReportIssue={() => navigate("/support")}
           user={user}
         />
         <main className="page-shell p-6">

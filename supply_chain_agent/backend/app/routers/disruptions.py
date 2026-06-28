@@ -1,10 +1,18 @@
 from __future__ import annotations
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
+
+from app.models.db_models import User
+from app.services.auth_service import require_viewer
 
 router = APIRouter()
 
 
 @router.get("")
-async def list_disruptions(request: Request, severity: str | None = Query(None), active_only: bool = Query(True)):
+async def list_disruptions(
+    request: Request,
+    severity: str | None = Query(None),
+    active_only: bool = Query(True),
+    current_user: User = Depends(require_viewer),
+):
     data_service = request.app.state.data_service
     return data_service.get_disruptions(severity=severity, active_only=active_only)

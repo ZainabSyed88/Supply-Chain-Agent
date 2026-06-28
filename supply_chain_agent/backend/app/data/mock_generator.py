@@ -4,9 +4,11 @@ import random
 from datetime import datetime, timedelta
 from typing import Literal
 from faker import Faker
+from app.models.order import Order
 from app.models.shipment import Shipment
 from app.models.supplier import Supplier
 from app.models.disruption import Disruption
+from app.models.warehouse import Warehouse
 
 faker = Faker()
 faker.seed_instance(42)
@@ -37,6 +39,12 @@ DISRUPTION_TYPES = ["weather", "strike", "port_congestion", "customs", "geopolit
 SEVERITY_LEVELS = ["critical", "high", "medium", "low"]
 STATUS_CHOICES = ["in_transit", "delayed", "delivered", "at_risk"]
 SKU_NAMES = [f"SKU-{i:03d}" for i in range(1, 21)]
+WAREHOUSE_BLUEPRINTS = [
+    ("WH-001", "New Jersey Fulfillment Hub", "North America East", "United States"),
+    ("WH-002", "Rotterdam Gateway Center", "Europe", "Netherlands"),
+    ("WH-003", "Monterrey Crossdock", "North America South", "Mexico"),
+    ("WH-004", "Singapore Air Freight Hub", "Asia Pacific", "Singapore"),
+]
 
 
 def compute_risk_score(on_time_delivery_rate: float, defect_rate: float) -> float:
@@ -153,3 +161,83 @@ def generate_demand_history(days: int = 180, sku_count: int = 20) -> dict[str, l
         demand_history[sku_id] = daily_records
 
     return demand_history
+
+
+def generate_warehouses() -> list[Warehouse]:
+    warehouses: list[Warehouse] = []
+    for warehouse_id, name, region, country in WAREHOUSE_BLUEPRINTS:
+        utilization = round(random.uniform(0.58, 0.96), 2)
+        staff_required = random.randint(45, 120)
+        staff_scheduled = max(20, staff_required + random.randint(-15, 12))
+        dock_capacity = random.randint(18, 42)
+        throughput = random.randint(180, 680)
+        if utilization >= 0.9 or staff_scheduled < staff_required:
+            storage_health = "critical"
+        elif utilization >= 0.8:
+            storage_health = "tight"
+        else:
+            storage_health = "stable"
+
+        warehouses.append(
+            Warehouse(
+                warehouse_id=warehouse_id,
+                name=name,
+                region=region,
+                country=country,
+                utilization_rate=utilization,
+                staff_scheduled=staff_scheduled,
+                staff_required=staff_required,
+                pending_shipments=random.randint(8, 65),
+                dock_capacity=dock_capacity,
+                throughput_today=throughput,
+                storage_health=storage_health,
+                picking_efficiency=round(random.uniform(0.71, 0.98), 2),
+            )
+        )
+
+    return warehouses
+
+
+def generate_orders(
+    shipments: list[Shipment],
+    inventory: dict[str, int],
+    warehouses: list[Warehouse],
+    count: int = 36,
+) -> list[Order]:
+    statuses = ["pending", "allocated", "processing", "shipped", "delayed"]
+    priorities = ["low", "medium", "high", "critical"]
+    regions = ["North America", "Europe", "Asia Pacific", "Middle East", "Latin America"]
+    orders: list[Order] = []
+    now = datetime.utcnow()
+
+    for index in range(1, count + 1):
+        sku_id = random.choice(list(inventory.keys()))
+        warehouse = random.choice(warehouses)
+        quantity = random.randint(5, 60)
+        available = inventory.get(sku_id, 0)
+        priority = random.choices(priorities, weights=[0.25, 0.35, 0.25, 0.15], k=1)[0]
+        status = random.choices(statuses, weights=[0.2, 0.25, 0.22, 0.2, 0.13], k=1)[0]
+        linked_shipment = random.choice(shipments) if status in {"shipped", "delayed"} else None
+
+        shortage = max(0, quantity - available)
+        risk = 12 + shortage * 1.5 + (18 if status == "delayed" else 0) + (10 if priority in {"high", "critical"} else 0)
+
+        orders.append(
+            Order(
+                order_id=f"ORD-{index:04d}",
+                sku_id=sku_id,
+                customer_name=faker.company(),
+                destination_region=random.choice(regions),
+                warehouse_id=warehouse.warehouse_id,
+                shipment_id=linked_shipment.shipment_id if linked_shipment else None,
+                status=status,
+                priority=priority,
+                quantity=quantity,
+                inventory_available=available,
+                promised_date=now + timedelta(days=random.randint(2, 18)),
+                created_at=now - timedelta(days=random.randint(0, 10), hours=random.randint(0, 23)),
+                fulfillment_risk=round(min(100.0, risk), 1),
+            )
+        )
+
+    return orders

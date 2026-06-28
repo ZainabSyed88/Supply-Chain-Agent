@@ -66,7 +66,7 @@ class AsyncSupplyChainOrchestrator:
             "recommendations": [],
         }
 
-        # Initialize agents (they will handle both OpenAI and Ollama modes)
+        # Initialize agents with the shared OpenAI client.
         self.supplier_monitor = SupplierMonitorAgent(self.openai_client)
         self.disruption_detector = DisruptionDetectorAgent(self.openai_client)
         self.risk_assessor = RiskAssessmentAgent(self.openai_client)

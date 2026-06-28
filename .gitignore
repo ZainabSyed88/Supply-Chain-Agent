@@ -18,3 +18,15 @@ Thumbs.db
 # Frontend build artifacts
 **/node_modules/
 **/dist/
+**/logs/
+**/output/reports/
+**/output/*.pdf
+**/output/*.pptx
+
+# Local auth store
+**/auth_store.json
+*.db
+*.sqlite
+**/*.db
+**/*.sqlite
+tmp-*.log

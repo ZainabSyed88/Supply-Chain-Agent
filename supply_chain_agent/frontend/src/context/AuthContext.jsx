@@ -1,17 +1,9 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react"
+import { createContext, useEffect, useMemo, useState } from "react"
+import { api } from "../utils/api"
 
-const USERS_KEY = "chainpulse_auth_users"
 const SESSION_KEY = "chainpulse_auth_session"
 
-const AuthContext = createContext(null)
-
-function loadUsers() {
-  try {
-    return JSON.parse(localStorage.getItem(USERS_KEY) || "[]")
-  } catch {
-    return []
-  }
-}
+export const AuthContext = createContext(null)
 
 function loadSession() {
   try {
@@ -21,84 +13,88 @@ function loadSession() {
   }
 }
 
+function persistSession(session) {
+  if (session) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  } else {
+    localStorage.removeItem(SESSION_KEY)
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [users, setUsers] = useState(() => loadUsers())
-  const [user, setUser] = useState(() => loadSession())
+  const [session, setSession] = useState(() => loadSession())
+  const [isReady, setIsReady] = useState(false)
+  const user = session?.user || null
 
   useEffect(() => {
-    localStorage.setItem(USERS_KEY, JSON.stringify(users))
-  }, [users])
+    const restore = async () => {
+      if (!session?.accessToken) {
+        setIsReady(true)
+        return
+      }
+      try {
+        const currentUser = await api.getCurrentUser()
+        setSession((prev) => (prev ? { ...prev, user: currentUser } : null))
+      } catch {
+        setSession(null)
+      } finally {
+        setIsReady(true)
+      }
+    }
+    restore()
+  }, [])
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(user))
-    } else {
-      localStorage.removeItem(SESSION_KEY)
-    }
-  }, [user])
+    persistSession(session)
+  }, [session])
 
-  const signIn = async ({ email, password }) => {
-    const existingUser = users.find(
-      (entry) => entry.email.toLowerCase() === email.toLowerCase() && entry.password === password
-    )
-    if (!existingUser) {
-      throw new Error("Invalid email or password.")
+  const signIn = async ({ username, password }) => {
+    const authResponse = await api.login(username, password)
+    const nextSession = {
+      accessToken: authResponse.access_token,
+      refreshToken: authResponse.refresh_token,
+      user: authResponse.user
     }
-
-    const nextUser = {
-      id: existingUser.id,
-      name: existingUser.name,
-      email: existingUser.email
-    }
-    setUser(nextUser)
-    return nextUser
+    persistSession(nextSession)
+    setSession(nextSession)
+    setIsReady(true)
+    return authResponse.user
   }
 
-  const signUp = async ({ name, email, password }) => {
-    const duplicate = users.find((entry) => entry.email.toLowerCase() === email.toLowerCase())
-    if (duplicate) {
-      throw new Error("An account with this email already exists.")
-    }
-
-    const createdUser = {
-      id: `${Date.now()}`,
-      name: name.trim(),
-      email: email.trim(),
+  const signUp = async ({ fullName, username, email, password }) => {
+    await api.register({
+      full_name: fullName,
+      username,
+      email,
       password
-    }
-    setUsers((prev) => [...prev, createdUser])
-
-    const nextUser = {
-      id: createdUser.id,
-      name: createdUser.name,
-      email: createdUser.email
-    }
-    setUser(nextUser)
-    return nextUser
+    })
+    return signIn({ username, password })
   }
 
-  const signOut = () => {
-    setUser(null)
+  const signOut = async () => {
+    try {
+      await api.signOut()
+    } catch {
+      return
+    } finally {
+      persistSession(null)
+      setSession(null)
+      setIsReady(true)
+    }
   }
 
   const value = useMemo(
     () => ({
       user,
+      role: user?.role || null,
+      isReady,
       isAuthenticated: Boolean(user),
       signIn,
       signUp,
       signOut
     }),
-    [user]
+    [isReady, user]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider")
-  }
-  return context
 }

@@ -31,3 +31,11 @@ def load_inventory_levels() -> list[dict[str, object]]:
 
 def load_inventory_alerts() -> list[dict[str, object]]:
     return get_data_service().get_inventory_alerts()
+
+
+def load_orders(status: str | None = None, priority: str | None = None, warehouse_id: str | None = None):
+    return get_data_service().get_orders(status=status, priority=priority, warehouse_id=warehouse_id)
+
+
+def load_warehouses(region: str | None = None, health: str | None = None):
+    return get_data_service().get_warehouses(region=region, health=health)

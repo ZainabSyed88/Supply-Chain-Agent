@@ -21,5 +21,16 @@ class PipelineRun(BaseModel):
     errors: list[str] = Field(default_factory=list)
 
 
-class ChatMessage(BaseModel):
+class ChatHistoryMessage(BaseModel):
+    role: str
+    content: str
+    session_id: str | None = None
+    timestamp: str | None = None
+    confidence: float | None = None
+
+
+class ChatRequest(BaseModel):
     message: str
+    history: list[ChatHistoryMessage | dict] = Field(default_factory=list)
+    include_context: bool = True
+    session_id: str | None = None

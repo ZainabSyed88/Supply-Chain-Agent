@@ -1,67 +1,22 @@
-# Core AI/ML
-openai>=1.0.0
-langchain>=0.1.0
-python-dotenv>=1.0.0
-
-# API & Data
-requests>=2.31.0
-pandas>=2.0.0
-pydantic>=2.0.0
-sqlalchemy>=2.0.0
-
-# Web Framework
-streamlit>=1.28.0
-flask>=3.0.0
-flask-cors>=4.0.0
-
-# Visualization
-plotly>=5.0.0
-folium>=0.14.0
-matplotlib>=3.7.0
-seaborn>=0.12.0
-
-# Maps & Geolocation
-streamlit-folium>=0.15.0
-
-# Data Processing & ML
-numpy>=1.24.0
-scikit-learn>=1.3.0
-scipy>=1.11.0
-
-# Time Series & Forecasting (for predictions)
-# prophet>=1.1  # Optional - can be added if needed
-xgboost>=1.7.0
-
-# Reporting & Utilities
-reportlab>=4.0.0
-python-pptx>=0.6.21
-
-# Testing
-pytest>=7.4.0
-pytest-cov>=4.1.0
-
-# Utilities
-jinja2>=3.1.2
-python-dateutil>=2.8.2
-pytz>=2023.3
-click>=8.1.0
-colorama>=0.4.6
-
-# Optional: For voice assistant (uncomment if needed)
-# openai-whisper>=20230314  # Speech-to-text
-# pyttsx3>=2.90  # Text-to-speech
-
-# Development tools (optional)
-black>=23.0.0
-flake8>=6.0.0
-mypy>=1.6.0
-
-# Additional API & service dependencies
 fastapi>=0.111.0
 uvicorn[standard]>=0.29.0
+pydantic>=2.0.0
 pydantic-settings>=2.0.0
-anthropic>=0.25.0
+openai>=1.30.0
 httpx>=0.27.0
 loguru>=0.7.0
+python-dotenv>=1.0.0
 faker>=25.0.0
-python-multipart
+numpy>=1.26.0
+pandas>=2.2.0
+websockets>=12.0
+reportlab>=4.0.0
+python-pptx>=0.6.23
+python-multipart>=0.0.9
+sqlalchemy>=2.0.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+aiosmtplib>=3.0.0
+email-validator>=2.1.0
+aiofiles>=23.0.0
+pytest>=7.4.0

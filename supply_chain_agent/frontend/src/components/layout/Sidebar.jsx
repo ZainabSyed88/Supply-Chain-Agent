@@ -1,12 +1,15 @@
 import { NavLink } from "react-router-dom"
 import {
   Bot,
+  Building2,
   Factory,
   FileText,
   Globe2,
+  Headset,
   LayoutDashboard,
   LogOut,
   Package,
+  ShoppingCart,
   Play,
   ShieldCheck,
   X,
@@ -17,17 +20,22 @@ import StatusDot from "../ui/StatusDot"
 import { formatRelativeTime } from "../../utils/formatters"
 
 const NAV_ITEMS = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/map", label: "Supply Chain Map", icon: Globe2 },
-  { to: "/war-room", label: "War Room", icon: Bot },
-  { to: "/suppliers", label: "Suppliers", icon: Factory },
-  { to: "/shipments", label: "Shipments", icon: Package },
-  { to: "/chat", label: "Copilot", icon: Bot },
-  { to: "/esg", label: "ESG", icon: ShieldCheck },
-  { to: "/reports", label: "Reports", icon: FileText }
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["admin", "analyst", "viewer"] },
+  { to: "/map", label: "Supply Chain Map", icon: Globe2, roles: ["admin", "analyst", "viewer"] },
+  { to: "/war-room", label: "War Room", icon: Bot, roles: ["admin", "analyst"] },
+  { to: "/orders", label: "Orders", icon: ShoppingCart, roles: ["admin", "analyst", "viewer"] },
+  { to: "/suppliers", label: "Suppliers", icon: Factory, roles: ["admin", "analyst", "viewer"] },
+  { to: "/shipments", label: "Shipments", icon: Package, roles: ["admin", "analyst", "viewer"] },
+  { to: "/warehouses", label: "Warehouses", icon: Building2, roles: ["admin", "analyst", "viewer"] },
+  { to: "/chat", label: "Copilot", icon: Bot, roles: ["admin", "analyst", "viewer"] },
+  { to: "/support", label: "Support", icon: Headset, roles: ["admin", "analyst", "viewer"] },
+  { to: "/esg", label: "ESG", icon: ShieldCheck, roles: ["admin", "analyst", "viewer"] },
+  { to: "/reports", label: "Reports", icon: FileText, roles: ["admin", "analyst", "viewer"] }
 ]
 
 export default function Sidebar({ mobileOpen, onClose, pipelineSummary, onRunPipeline, user, onSignOut }) {
+  const visibleItems = NAV_ITEMS.filter((item) => item.roles.includes(user?.role || "viewer"))
+
   return (
     <>
       <div
@@ -59,7 +67,7 @@ export default function Sidebar({ mobileOpen, onClose, pipelineSummary, onRunPip
         </div>
 
         <nav className="mt-8 space-y-1">
-          {NAV_ITEMS.map((item) => (
+          {visibleItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -83,8 +91,9 @@ export default function Sidebar({ mobileOpen, onClose, pipelineSummary, onRunPip
           {user ? (
             <div className="mb-4 rounded-lg border bg-white px-3 py-3">
               <p className="text-xs uppercase tracking-wide text-slate-400">Signed in as</p>
-              <p className="mt-1 text-sm font-semibold text-slate-900">{user.name}</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">{user.full_name || user.name}</p>
               <p className="text-xs text-slate-500">{user.email}</p>
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-primary">{user.role}</p>
             </div>
           ) : null}
           <div className="flex items-center justify-between">
@@ -99,14 +108,16 @@ export default function Sidebar({ mobileOpen, onClose, pipelineSummary, onRunPip
               {pipelineSummary?.recent ? "Healthy" : "Idle"}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onRunPipeline}
-            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark"
-          >
-            <Play className="h-4 w-4" />
-            Run Pipeline
-          </button>
+          {["admin", "analyst"].includes(user?.role) ? (
+            <button
+              type="button"
+              onClick={onRunPipeline}
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark"
+            >
+              <Play className="h-4 w-4" />
+              Run Pipeline
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onSignOut}
