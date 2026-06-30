@@ -1,470 +1,294 @@
 # ChainPulse
 
-ChainPulse is a supply chain operations dashboard with:
+AI-assisted supply chain control tower for disruption detection, operational triage, and mitigation planning.
 
-- a `FastAPI` backend on port `5000`
-- a `React + Vite` frontend on port `8000`
-- JWT auth with `Admin / Analyst / Viewer` roles
-- SQLite-backed users, pipeline runs, alerts, and chat history
-- PDF report generation
-- optional real-time NewsAPI and OpenWeatherMap intelligence feeds
+## Live Demo
 
-This README is organized around how to run and work with the repo today.
+- Frontend: `https://chainpulseapp.vercel.app`
+- Backend API: `https://soothing-adventure-production-86ec.up.railway.app`
+- Authentication note: most backend endpoints require a JWT. If you open the API URL directly without first authenticating through the frontend, you should expect a response such as `{"detail":"Not authenticated"}`.
 
-## What's in the app
+## Quick Start (Local Development)
 
-### Core product areas
+### 1. Clone the repository
 
-- `Dashboard`: KPIs, inventory, supplier risk, live alerts, demand charts
-- `Orders`: backlog, critical commitments, and fulfillment risk
-- `Warehouses`: utilization, staffing, and shipment throughput
-- `Copilot`: chat UI with local fallback responses and voice input
-- `Reports`: pipeline history and PDF download
-- `War Room`: restricted pipeline execution view
-- `Supply Chain Map`: supplier/shipment/disruption visualization
-- `ESG`: carbon and sustainability dashboards
+```bash
+git clone <your-repo-url>
+cd supply_chain_agent
+```
 
-### Legacy and experimental modules
+### 2. Start the backend
 
-The repo also still includes older hackathon-era Python surfaces outside the current FastAPI + React app:
+```bash
+cd backend
+python -m venv .venv
+```
 
-- `advanced_orchestrator.py`: older multi-agent orchestration entrypoint
-- `dashboard.py`: Streamlit dashboard prototype
-- `digital_twin.py`: what-if simulation prototype
-- `copilot.py` and `copilot_chat.py`: earlier conversational interfaces
-- `email_generator.py`, `report_generator.py`, `sustainability.py`: standalone feature prototypes
+Activate the virtual environment:
 
-These can still be useful for reference or demos, but the main supported app flow is the FastAPI backend plus React frontend described in this README.
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
 
-### Current auth model
+Install dependencies and create the backend environment file:
 
-- `admin`: full access
-- `analyst`: can view the product and run pipeline workflows
-- `viewer`: read-only access
+```powershell
+pip install -r requirements.txt
+Copy-Item .env.example .env
+```
 
-## Project structure
+Update `.env` with at least:
+
+- `SECRET_KEY`
+- `ADMIN_BOOTSTRAP_USERNAME`
+- `ADMIN_BOOTSTRAP_EMAIL`
+- `ADMIN_BOOTSTRAP_PASSWORD`
+
+Optional but recommended for the full copilot experience:
+
+- `OPENAI_API_KEY`
+
+Then run the API:
+
+```powershell
+python run_api.py
+```
+
+Alternative:
+
+```powershell
+uvicorn app.main:app --host 0.0.0.0 --port 5000 --reload
+```
+
+### 3. Start the frontend
+
+From the repository root, or after backend setup run `cd ..\frontend`:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Local URLs:
+
+- Frontend: `http://127.0.0.1:8000`
+- Backend: `http://localhost:5000`
+
+## Current Product Surface
+
+The deployed application consists of:
+
+- `Dashboard`: KPIs, anomaly views, demand and carbon summaries
+- `Orders`: backlog visibility and fulfillment risk
+- `Suppliers`: supplier portfolio and risk scoring
+- `Shipments`: delay and in-transit monitoring
+- `Warehouses`: utilization and throughput visibility
+- `War Room`: authenticated pipeline execution and live run telemetry
+- `Reports`: persisted run history and PDF export
+- `Copilot`: executive Q&A over current operational context
+- `Supply Chain Map`: geographic risk and movement visualization
+- `ESG Dashboard`: sustainability and carbon views
+- `Support Tickets`: lightweight issue intake and tracking
+
+## Architecture and Tech Stack
+
+### Backend
+
+- `FastAPI` application served by `uvicorn`
+- `SQLAlchemy` for persistence
+- JWT authentication using `python-jose` and `passlib`/bcrypt
+- `loguru` for application logging
+- WebSocket updates for pipeline progress and alerts
+- PDF report generation with `reportlab`
+
+### Frontend
+
+- `React 18` with `Vite`
+- `react-router-dom` for routing
+- `Tailwind CSS` for styling
+- `Recharts` for KPI and performance charts
+- `react-leaflet` / `leaflet` for the supply chain map
+
+### LLM Integration
+
+- OpenAI API via `chat.completions`
+- The Executive Copilot uses a single prompt built from live app context plus recent chat history
+- If `OPENAI_API_KEY` is not configured or the request fails, the app falls back to a local rules-based copilot response
+
+## Pipeline Architecture
+
+The current backend pipeline and War Room UI are aligned on the same five agents:
+
+1. `Supplier Monitor`
+2. `Disruption Detector`
+3. `Risk Assessor`
+4. `Mitigation`
+5. `Stakeholder Notification`
+
+Execution model:
+
+- Tier 1 runs `Supplier Monitor` and `Disruption Detector` in parallel
+- Tier 2 runs `Risk Assessor` and `Mitigation` in parallel
+- `Stakeholder Notification` runs last to preserve ordered output
+
+## Authentication Model
+
+Role-based access is enforced with JWTs:
+
+- `admin`: full platform access
+- `analyst`: operational access plus pipeline execution
+- `viewer`: read-only access to permitted dashboards and reports
+
+Public health endpoints:
+
+- `GET /health`
+- `GET /api/health`
+
+Most business endpoints under `/api/*` require authentication.
+
+## Project Structure
 
 ```text
 supply_chain_agent/
 |- backend/
 |  |- app/
-|  |  |- core/           # config, logging, exceptions
-|  |  |- data/           # mock data generation
-|  |  |- models/         # Pydantic + SQLAlchemy models
-|  |  |- routers/        # FastAPI route modules
-|  |  `- services/       # auth, orchestration, email, intelligence
-|  |- logs/
+|  |  |- core/
+|  |  |- data/
+|  |  |- models/
+|  |  |- routers/
+|  |  `- services/
+|  |- .env.example
 |  |- requirements.txt
-|  `- run.py
+|  |- run.py
+|  `- run_api.py
 |- frontend/
 |  |- src/
-|  |  |- components/
-|  |  |- context/
-|  |  |- hooks/
-|  |  |- pages/
-|  |  `- utils/
 |  |- package.json
 |  `- vite.config.js
 |- tests/
-|- run_frontend.py
-|- run_all.py
 `- README.md
 ```
 
-## Requirements
+## Deployment
 
-### Backend
+### Backend on Railway
 
-- Python `3.11+` recommended
-- virtual environment strongly recommended
+Current deployment model:
 
-### Frontend
+- Platform: `Railway`
+- Root Directory: `backend`
+- Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 
-- Node.js `18+`
-- npm
+Recommended public endpoints:
 
-## Quick start
+- Health: `/health` or `/api/health`
+- OpenAPI docs: `/docs`
 
-### 1. Create and activate a virtual environment
+Railway environment variables:
 
-From `supply_chain_agent`:
-
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-```
-
-If PowerShell blocks activation:
-
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\venv\Scripts\Activate.ps1
-```
-
-### 2. Install backend dependencies
-
-```powershell
-.\venv\Scripts\python.exe -m pip install --upgrade pip
-.\venv\Scripts\python.exe -m pip install -r backend\requirements.txt
-```
-
-### 3. Install frontend dependencies
-
-```powershell
-cd frontend
-npm install
-cd ..
-```
-
-### 4. Configure environment variables
-
-Create `backend\.env` or `.env` depending on how you run the backend. The current backend config reads `.env`.
-
-Example:
+Required for deployed operation:
 
 ```env
-# Core app
-DATABASE_URL=sqlite:///./chainpulse.db
-SECRET_KEY=change-me-in-production
-FRONTEND_URL=http://localhost:8000
+SECRET_KEY=replace-with-a-long-random-secret
+ADMIN_BOOTSTRAP_USERNAME=admin
+ADMIN_BOOTSTRAP_EMAIL=admin@yourcompany.com
+ADMIN_BOOTSTRAP_PASSWORD=replace-with-a-strong-password
+OPENAI_API_KEY=...
+FRONTEND_URL=https://chainpulseapp.vercel.app
+```
 
-# Email
+Supported by the backend configuration and commonly set in Railway:
+
+```env
+ENVIRONMENT=production
+DATABASE_URL=sqlite:////tmp/chainpulse.db
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+REFRESH_TOKEN_EXPIRE_DAYS=30
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=
 SMTP_PASSWORD=
-
-# LLM / chat provider
-OPENAI_API_KEY=
 OPENAI_MODEL=gpt-4
-
-# Real-time intelligence
 NEWS_API_KEY=
 WEATHER_API_KEY=
 NEWS_FETCH_INTERVAL_MINUTES=30
 WEATHER_FETCH_INTERVAL_MINUTES=60
-```
-
-### 5. Run the app
-
-Recommended:
-
-```powershell
-.\venv\Scripts\python.exe run_all.py
-```
-
-`run_all.py` checks for missing backend packages before launch and exits with a clear fix command if the environment is incomplete.
-
-### 6. Open the frontend
-
-```text
-http://127.0.0.1:8000
-```
-
-## Running services individually
-
-### Backend only
-
-```powershell
-.\venv\Scripts\python.exe backend\run.py
-```
-
-Backend URL:
-
-```text
-http://localhost:5000
-```
-
-### Frontend only
-
-```powershell
-cd frontend
-npm run dev
-```
-
-Frontend URL:
-
-```text
-http://127.0.0.1:8000
-```
-
-Note:
-
-- the frontend uses `--strictPort`
-- if port `8000` is busy, Vite fails instead of silently switching ports
-- if PowerShell blocks `npm`, use `cmd /c npm run dev`
-
-Alternative launcher from the project root:
-
-```powershell
-.\venv\Scripts\python.exe run_frontend.py
-```
-
-## Default login
-
-On first successful backend startup, the app seeds a default admin user if the database is empty:
-
-- username: `admin`
-- email: `admin@chainpulse.ai`
-- password: `admin123`
-
-If login feels like it is "hanging", it usually means the backend is not running or is missing dependencies. Start by checking whether `http://localhost:5000/api/health` responds.
-
-## Backend highlights
-
-### Main services
-
-- `backend/app/main.py`
-  - FastAPI app
-  - route registration
-  - pipeline lifecycle
-  - PDF generation
-  - startup seeding
-- `backend/app/services/auth_service.py`
-  - password hashing
-  - JWT creation and validation
-  - role guards
-- `backend/app/services/email_service.py`
-  - welcome email
-  - pipeline completion email
-- `backend/app/services/news_service.py`
-  - NewsAPI integration with mock fallback
-- `backend/app/services/weather_service.py`
-  - OpenWeatherMap integration with mock fallback
-- `backend/app/services/orchestrator.py`
-  - async multi-agent pipeline execution
-
-### Database tables
-
-- `users`
-- `pipeline_runs`
-- `alerts`
-- `chat_history`
-
-### Supply chain functional coverage
-
-ChainPulse now covers the main operational agent flows you listed:
-
-- `Inventory and order management`: inventory levels, reorder alerts, demand forecasting, order backlog, fill-rate visibility
-- `Warehouse operations`: warehouse utilization, staffing gaps, storage health, pending shipments, picking efficiency
-- `Logistics and transportation`: shipment tracking, delay monitoring, disruption-linked lanes, route-focused recommendations
-- `Supplier management`: supplier portfolio, risk scoring, disruption exposure, alternate supplier recommendations
-- `Cross-functional coordination`: multi-agent orchestration, war room execution, shared recommendations, PDF reporting, alerts
-
-### Protected route pattern
-
-- public: auth login/register/refresh
-- viewer+: dashboard, suppliers, shipments, chat, reports, intelligence
-- analyst+: pipeline execution, war room
-- admin: user management
-
-## Frontend highlights
-
-### Main files
-
-- `frontend/src/App.jsx`
-  - routing
-  - protected route boundaries
-- `frontend/src/context/AuthContext.jsx`
-  - session state
-- `frontend/src/hooks/useAuth.js`
-  - auth hook
-- `frontend/src/utils/api.js`
-  - authenticated API client
-  - timeout and error handling
-- `frontend/src/pages/Auth.jsx`
-  - login/register screen
-- `frontend/src/components/shared/NewsFeed.jsx`
-  - live intelligence feed widget
-
-## Real-time intelligence
-
-ChainPulse can combine:
-
-- NewsAPI headlines for supply chain disruption detection
-- OpenWeatherMap weather checks for supplier-country risk alerts
-
-Available backend endpoints:
-
-- `GET /api/intelligence/news`
-- `GET /api/intelligence/weather`
-- `GET /api/intelligence/feed`
-
-If the keys are missing, the services fall back to mock data so the UI still works.
-
-## Legacy advanced system notes
-
-Before the current web app structure, this project also explored a broader hackathon-style agent platform with:
-
-- expanded multi-agent orchestration
-- digital twin simulations
-- standalone email/report generation flows
-- sustainability and cost-impact experiments
-
-If you want to explore those modules, the most relevant entrypoints are:
-
-- `advanced_orchestrator.py`
-- `digital_twin.py`
-- `dashboard.py`
-- `copilot.py`
-
-Treat those as secondary or experimental compared with the current backend/frontend application.
-
-## Reports
-
-PDF reports are generated by the backend and downloaded through authenticated frontend requests.
-
-Main endpoint:
-
-- `GET /api/report/download/{run_id}`
-
-## Deployment
-
-ChainPulse is prepared for:
-
-- `Railway` for the FastAPI backend
-- `Vercel` for the React + Vite frontend
-
-### Backend on Railway
-
-- Root directory: `backend`
-- Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- Health endpoints:
-  - `GET /health`
-  - `GET /api/health`
-- API docs: `/docs`
-
-Recommended Railway environment variables:
-
-```env
-SECRET_KEY=change-this-in-railway
-DATABASE_URL=sqlite:////tmp/chainpulse.db
-FRONTEND_URL=https://your-vercel-project.vercel.app
-OPENAI_API_KEY=
-OPENAI_MODEL=gpt-4
-NEWS_API_KEY=
-WEATHER_API_KEY=
-SMTP_USER=
-SMTP_PASSWORD=
+ADMIN_BOOTSTRAP_FULL_NAME=ChainPulse Admin
+RUN_TIMEOUT_SECONDS=30
+LOG_LEVEL=INFO
+LOG_FILE=/tmp/logs/app.log
+LOG_ROTATION_SIZE=10 MB
+LOG_BACKUP_COUNT=5
+CORS_ORIGINS=["https://chainpulseapp.vercel.app"]
+CACHE_TTL_SECONDS=60
 ```
 
 Notes:
 
-- The backend now defaults to `/tmp/chainpulse.db` and `/tmp/logs/app.log` when running on Railway.
-- CORS allows local development origins plus `FRONTEND_URL` and any extra `CORS_ORIGINS` you configure.
+- The backend defaults to SQLite, and on Railway the fallback path is `/tmp/chainpulse.db`.
+- `SECRET_KEY` is mandatory at startup.
+- The initial admin bootstrap variables are required on first startup when the database is empty.
+- `OPENAI_API_KEY` enables the live OpenAI-backed copilot; without it, the app still boots and falls back to the local copilot response path.
+- CORS must explicitly allow the Vercel frontend domain. In practice, set `FRONTEND_URL=https://chainpulseapp.vercel.app` and include that domain in `CORS_ORIGINS` if you allow additional origins.
 
 ### Frontend on Vercel
 
-- Root directory: `frontend`
+Current deployment model:
+
+- Platform: `Vercel`
+- Root Directory: `frontend`
 - Build command: `npm run build`
 - Output directory: `dist`
 
-Set these Vercel environment variables:
+Frontend environment variables:
 
 ```env
-VITE_API_BASE=https://your-railway-service.up.railway.app/api
-VITE_WS_BASE=wss://your-railway-service.up.railway.app/ws
+VITE_API_BASE=https://soothing-adventure-production-86ec.up.railway.app/api
+VITE_WS_BASE=wss://soothing-adventure-production-86ec.up.railway.app/ws
 ```
 
-Helpful files already included:
+Note:
 
-- `frontend/vercel.json`
-- `frontend/.env.development`
-- `frontend/.env.production`
-- `backend/Procfile`
-- `backend/nixpacks.toml`
-- `backend/runtime.txt`
+- The checked-in frontend currently reads `VITE_API_BASE` and `VITE_WS_BASE` from `frontend/src/utils/constants.js`. If your Vercel project uses a `VITE_API_URL` naming convention, it should point to the same Railway backend, but the current code expects `VITE_API_BASE`.
 
-## Testing and validation
+## API and Runtime Notes
 
-### Python syntax checks
+- The frontend talks to the REST API under `/api`.
+- The War Room and alert stream use WebSockets under `/ws`.
+- PDF reports are downloaded from `GET /api/report/download/{run_id}`.
+- Most dashboard, supplier, shipment, ticket, chat, and pipeline history endpoints require a valid bearer token.
+
+## Known Limitations / Future Work
+
+- The Executive Copilot currently uses single-shot LLM prompting rather than full tool-calling or function-calling orchestration.
+- SQLite is used instead of a production database such as Postgres. This is acceptable for demo scale, but it is not yet designed for concurrent multi-user production load.
+- Pipeline run state is kept in memory. There is no Redis-backed state layer or persistent job queue yet.
+- Formal database migration tooling such as Alembic is not in place yet, so schema changes currently require manual handling.
+- Business-outcome metrics such as mitigation adoption rate or avoided-loss estimates are not yet tracked; current KPIs are primarily operational.
+
+## Testing and Validation
+
+Backend syntax check:
 
 ```powershell
-.\venv\Scripts\python.exe -m py_compile backend\app\main.py
+python -m py_compile backend\app\main.py
 ```
 
-### Backend tests
+Backend tests:
 
 ```powershell
-.\venv\Scripts\python.exe -m pytest -q
+pytest -q
 ```
 
-### Frontend build
+Frontend production build:
 
 ```powershell
 cd frontend
-cmd /c npm run build
-cd ..
+npm run build
 ```
 
-## Common issues
+## Repository Notes
 
-### Backend request timed out on login
-
-Cause:
-
-- backend not running
-- backend missing packages such as `fastapi`
-
-Fix:
-
-```powershell
-.\venv\Scripts\python.exe -m pip install -r backend\requirements.txt
-.\venv\Scripts\python.exe backend\run.py
-```
-
-### `run_all.py` stops immediately
-
-Cause:
-
-- missing backend dependencies
-- frontend port `8000` already in use
-
-Fix:
-
-- install backend requirements
-- stop the process already using `8000`, then rerun
-
-### News or weather feed shows mock data
-
-Cause:
-
-- `NEWS_API_KEY` or `WEATHER_API_KEY` not configured
-
-Fix:
-
-- add valid keys to `.env`
-- restart the backend
-
-## Useful commands
-
-### Install backend requirements
-
-```powershell
-.\venv\Scripts\python.exe -m pip install -r backend\requirements.txt
-```
-
-### Start backend
-
-```powershell
-.\venv\Scripts\python.exe backend\run.py
-```
-
-### Start frontend
-
-```powershell
-.\venv\Scripts\python.exe run_frontend.py
-```
-
-### Start both
-
-```powershell
-.\venv\Scripts\python.exe run_all.py
-```
-
-## Notes
-
-- The repo still contains older hackathon-era scripts and documents that do not reflect the current FastAPI + React app exactly.
-- This README is intentionally centered on the current working app, not the older experimental surfaces.
-- The backend uses a mix of live integrations and mock fallback behavior so the UI remains usable without every external API configured.
-- For deeper deployment or feature-specific notes, also see `DEPLOYMENT.md` and `FEATURES.md`.
+- The repository still contains earlier hackathon prototype files outside the deployed FastAPI and React application.
+- This README is intentionally scoped to the current shipped web product and the five-agent backend pipeline that powers the War Room.
