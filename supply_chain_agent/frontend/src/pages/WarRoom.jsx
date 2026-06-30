@@ -3,19 +3,14 @@ import { useLocation, useOutletContext } from "react-router-dom"
 import {
   AlertTriangle,
   ArrowDown,
-  Banknote,
   Bot,
   Factory,
-  FileText,
-  Leaf,
-  Network,
-  ScanSearch,
   Send,
   ShieldCheck,
   Sparkles,
-  TrendingUp,
   Zap
 } from "lucide-react"
+import { TrendingUp } from "lucide-react"
 import {
   Bar,
   BarChart,
@@ -37,14 +32,8 @@ import { AGENT_TIERS } from "../utils/constants"
 const iconMap = {
   factory: Factory,
   zap: Zap,
-  scan: ScanSearch,
   shield: ShieldCheck,
   sparkles: Sparkles,
-  banknote: Banknote,
-  leaf: Leaf,
-  network: Network,
-  "line-chart": TrendingUp,
-  "file-text": FileText,
   send: Send
 }
 
@@ -160,7 +149,7 @@ export default function WarRoom() {
       <section className="rounded-lg border bg-white p-5 shadow-card">
         <div className="mb-5">
           <h2 className="text-lg font-semibold text-slate-900">Agent Tier Visualizer</h2>
-          <p className="text-sm text-slate-500">Execution flow across monitoring, risk, mitigation, and reporting layers.</p>
+          <p className="text-sm text-slate-500">Live execution flow for the five backend pipeline agents running in today&apos;s demo.</p>
         </div>
         <div className="space-y-5">
           {AGENT_TIERS.map((tier, index) => (

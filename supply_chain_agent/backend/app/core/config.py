@@ -35,7 +35,8 @@ class Settings(BaseSettings):
     environment: str = "development"
     api_prefix: str = "/api"
     database_url: str = _default_database_url()
-    secret_key: str = "change-me-in-production"
+    # Required in every deployed environment. Leave blank locally until configured in .env.
+    secret_key: str = ""
     access_token_expire_minutes: int = 60 * 24
     refresh_token_expire_days: int = 30
     smtp_host: str = "smtp.gmail.com"
@@ -49,6 +50,11 @@ class Settings(BaseSettings):
     news_fetch_interval_minutes: int = 30
     weather_fetch_interval_minutes: int = 60
     frontend_url: str = "http://localhost:8000"
+    # Used only to bootstrap the first admin on an empty database.
+    admin_bootstrap_username: str = ""
+    admin_bootstrap_email: str = ""
+    admin_bootstrap_password: str = ""
+    admin_bootstrap_full_name: str = "ChainPulse Admin"
     run_timeout_seconds: int = 30
     log_level: str = "INFO"
     log_file: str = _default_log_file()

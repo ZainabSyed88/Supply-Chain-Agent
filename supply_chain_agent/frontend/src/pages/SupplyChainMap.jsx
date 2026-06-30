@@ -4,111 +4,11 @@ import L from "leaflet"
 import { Circle, MapContainer, Marker, Popup, Polyline, TileLayer, useMap } from "react-leaflet"
 import clsx from "clsx"
 import { AlertTriangle, Anchor, Building2, Layers3, RefreshCw, Ship, Truck } from "lucide-react"
-import { formatCurrency } from "../utils/formatters"
-
-const SUPPLIER_LOCATIONS = [
-  { id: "SUP-001", name: "Shanghai Electronics Co", country: "China", city: "Shanghai", lat: 31.2304, lng: 121.4737, category: "Electronics", risk: 72, on_time: 0.78, esg: 65 },
-  { id: "SUP-002", name: "Tokyo Precision Parts", country: "Japan", city: "Tokyo", lat: 35.6762, lng: 139.6503, category: "Electronics", risk: 28, on_time: 0.96, esg: 88 },
-  { id: "SUP-003", name: "Mumbai Textiles Ltd", country: "India", city: "Mumbai", lat: 19.076, lng: 72.8777, category: "Raw Materials", risk: 55, on_time: 0.82, esg: 71 },
-  { id: "SUP-004", name: "Seoul Components", country: "South Korea", city: "Seoul", lat: 37.5665, lng: 126.978, category: "Electronics", risk: 35, on_time: 0.93, esg: 82 },
-  { id: "SUP-005", name: "Ho Chi Minh Manufacturing", country: "Vietnam", city: "Ho Chi Minh", lat: 10.8231, lng: 106.6297, category: "Finished Goods", risk: 68, on_time: 0.79, esg: 60 },
-  { id: "SUP-006", name: "Bangkok Packaging Co", country: "Thailand", city: "Bangkok", lat: 13.7563, lng: 100.5018, category: "Packaging", risk: 42, on_time: 0.88, esg: 74 },
-  { id: "SUP-007", name: "Dhaka Garments", country: "Bangladesh", city: "Dhaka", lat: 23.8103, lng: 90.4125, category: "Finished Goods", risk: 78, on_time: 0.71, esg: 52 },
-  { id: "SUP-008", name: "Berlin Auto Parts GmbH", country: "Germany", city: "Berlin", lat: 52.52, lng: 13.405, category: "Raw Materials", risk: 22, on_time: 0.97, esg: 91 },
-  { id: "SUP-009", name: "Rotterdam Logistics BV", country: "Netherlands", city: "Rotterdam", lat: 51.9244, lng: 4.4777, category: "Packaging", risk: 48, on_time: 0.86, esg: 79 },
-  { id: "SUP-010", name: "Milan Fashion Supply", country: "Italy", city: "Milan", lat: 45.4642, lng: 9.19, category: "Finished Goods", risk: 31, on_time: 0.92, esg: 83 },
-  { id: "SUP-011", name: "Warsaw Components", country: "Poland", city: "Warsaw", lat: 52.2297, lng: 21.0122, category: "Electronics", risk: 44, on_time: 0.87, esg: 76 },
-  { id: "SUP-012", name: "New York Distributors", country: "USA", city: "New York", lat: 40.7128, lng: -74.006, category: "Finished Goods", risk: 18, on_time: 0.98, esg: 85 },
-  { id: "SUP-013", name: "Mexico City Assembly", country: "Mexico", city: "Mexico City", lat: 19.4326, lng: -99.1332, category: "Electronics", risk: 61, on_time: 0.8, esg: 63 },
-  { id: "SUP-014", name: "Sao Paulo Raw Materials", country: "Brazil", city: "Sao Paulo", lat: -23.5505, lng: -46.6333, category: "Raw Materials", risk: 53, on_time: 0.83, esg: 68 },
-  { id: "SUP-015", name: "Dubai Trade Hub", country: "UAE", city: "Dubai", lat: 25.2048, lng: 55.2708, category: "Packaging", risk: 38, on_time: 0.91, esg: 72 }
-]
-
-const SHIPMENT_ROUTES = [
-  { id: "SHP-001", from: "SUP-001", to: "SUP-012", status: "in_transit", value: 250000, eta: "2026-07-05", delay: 0 },
-  { id: "SHP-002", from: "SUP-005", to: "SUP-012", status: "delayed", value: 180000, eta: "2026-06-28", delay: 5 },
-  { id: "SHP-003", from: "SUP-007", to: "SUP-009", status: "at_risk", value: 95000, eta: "2026-07-10", delay: 3 },
-  { id: "SHP-004", from: "SUP-003", to: "SUP-008", status: "in_transit", value: 320000, eta: "2026-07-08", delay: 0 },
-  { id: "SHP-005", from: "SUP-002", to: "SUP-012", status: "delivered", value: 445000, eta: "2026-06-20", delay: 0 },
-  { id: "SHP-006", from: "SUP-004", to: "SUP-010", status: "in_transit", value: 167000, eta: "2026-07-15", delay: 0 },
-  { id: "SHP-007", from: "SUP-013", to: "SUP-012", status: "delayed", value: 88000, eta: "2026-07-01", delay: 7 },
-  { id: "SHP-008", from: "SUP-006", to: "SUP-009", status: "in_transit", value: 210000, eta: "2026-07-12", delay: 0 },
-  { id: "SHP-009", from: "SUP-015", to: "SUP-008", status: "at_risk", value: 390000, eta: "2026-07-03", delay: 2 },
-  { id: "SHP-010", from: "SUP-001", to: "SUP-010", status: "in_transit", value: 275000, eta: "2026-07-18", delay: 0 }
-]
-
-const DISRUPTION_ZONES = [
-  {
-    id: "DIS-001",
-    type: "strike",
-    severity: "critical",
-    lat: 51.9244,
-    lng: 4.4777,
-    title: "Port Workers Strike",
-    description: "Dock workers strike affecting 200+ vessels. Major shipping delay.",
-    affected_suppliers: ["SUP-009"],
-    affected_shipments: ["SHP-003", "SHP-008"],
-    revenue_impact: 850000,
-    detected: "2 hours ago",
-    resolution: "3-5 days"
-  },
-  {
-    id: "DIS-002",
-    type: "weather",
-    severity: "high",
-    lat: 10.8231,
-    lng: 106.6297,
-    title: "Typhoon Warning",
-    description: "Category 3 typhoon approaching. Factory shutdowns expected.",
-    affected_suppliers: ["SUP-005"],
-    affected_shipments: ["SHP-002"],
-    revenue_impact: 420000,
-    detected: "5 hours ago",
-    resolution: "1-2 weeks"
-  },
-  {
-    id: "DIS-003",
-    type: "port_congestion",
-    severity: "high",
-    lat: 31.2304,
-    lng: 121.4737,
-    title: "Shanghai Port Congestion",
-    description: "Record vessel queue of 180+ ships. Average delay 72 hours.",
-    affected_suppliers: ["SUP-001"],
-    affected_shipments: ["SHP-001", "SHP-010"],
-    revenue_impact: 620000,
-    detected: "1 day ago",
-    resolution: "5-7 days"
-  },
-  {
-    id: "DIS-004",
-    type: "geopolitical",
-    severity: "medium",
-    lat: 25.2048,
-    lng: 55.2708,
-    title: "Trade Restriction Alert",
-    description: "New customs regulations affecting Middle East shipments.",
-    affected_suppliers: ["SUP-015"],
-    affected_shipments: ["SHP-009"],
-    revenue_impact: 180000,
-    detected: "3 days ago",
-    resolution: "Unknown"
-  },
-  {
-    id: "DIS-005",
-    type: "customs",
-    severity: "medium",
-    lat: 19.4326,
-    lng: -99.1332,
-    title: "Border Customs Delay",
-    description: "Increased inspection times at US-Mexico border crossing.",
-    affected_suppliers: ["SUP-013"],
-    affected_shipments: ["SHP-007"],
-    revenue_impact: 95000,
-    detected: "6 hours ago",
-    resolution: "2-3 days"
-  }
-]
+import EmptyState from "../components/ui/EmptyState"
+import Spinner from "../components/ui/Spinner"
+import { useApi } from "../hooks/useApi"
+import { api } from "../utils/api"
+import { formatCurrency, formatDate, formatRelativeTime, formatPercent, statusLabel } from "../utils/formatters"
 
 const routeColors = {
   in_transit: "#3b82f6",
@@ -154,17 +54,6 @@ function createSupplierIcon(score) {
         position: relative;
       ">
         ${symbol}
-        <span style="
-          position: absolute;
-          top: -8px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 6px;
-          height: 6px;
-          background: ${color};
-          border-radius: 9999px;
-          animation: markerPulse 1.5s infinite;
-        "></span>
       </div>
     `,
     className: "",
@@ -207,10 +96,10 @@ function createDisruptionIcon(severity, type) {
   })
 }
 
-function getFilteredSuppliers(filter) {
-  if (filter === "at_risk") return SUPPLIER_LOCATIONS.filter((supplier) => supplier.risk > 65)
-  if (filter === "critical") return SUPPLIER_LOCATIONS.filter((supplier) => supplier.risk > 80)
-  return SUPPLIER_LOCATIONS
+function getFilteredSuppliers(filter, suppliers) {
+  if (filter === "at_risk") return suppliers.filter((supplier) => supplier.risk_score > 65)
+  if (filter === "critical") return suppliers.filter((supplier) => supplier.risk_score > 80)
+  return suppliers
 }
 
 function MapBridge({ onReady }) {
@@ -224,7 +113,7 @@ function MapBridge({ onReady }) {
 }
 
 function SupplierPopup({ supplier, navigate }) {
-  const riskColor = getRiskColor(supplier.risk)
+  const riskColor = getRiskColor(supplier.risk_score)
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", padding: "4px" }}>
@@ -238,7 +127,7 @@ function SupplierPopup({ supplier, navigate }) {
         }}
       >
         <div style={{ fontWeight: 700, fontSize: "14px", color: "#0f172a" }}>{supplier.name}</div>
-        <div style={{ fontSize: "12px", color: "#64748b" }}>{supplier.city}, {supplier.country}</div>
+        <div style={{ fontSize: "12px", color: "#64748b" }}>{supplier.country}</div>
       </div>
 
       <div
@@ -251,12 +140,12 @@ function SupplierPopup({ supplier, navigate }) {
       >
         <div style={{ background: "#f8fafc", padding: "8px", borderRadius: "6px" }}>
           <div style={{ fontSize: "10px", color: "#94a3b8", marginBottom: "2px" }}>RISK SCORE</div>
-          <div style={{ fontSize: "18px", fontWeight: 700, color: riskColor }}>{supplier.risk}</div>
+          <div style={{ fontSize: "18px", fontWeight: 700, color: riskColor }}>{Math.round(supplier.risk_score)}</div>
         </div>
         <div style={{ background: "#f8fafc", padding: "8px", borderRadius: "6px" }}>
           <div style={{ fontSize: "10px", color: "#94a3b8", marginBottom: "2px" }}>ON-TIME</div>
-          <div style={{ fontSize: "18px", fontWeight: 700, color: supplier.on_time > 0.9 ? "#10b981" : "#f59e0b" }}>
-            {Math.round(supplier.on_time * 100)}%
+          <div style={{ fontSize: "18px", fontWeight: 700, color: supplier.on_time_delivery_rate > 0.9 ? "#10b981" : "#f59e0b" }}>
+            {formatPercent(supplier.on_time_delivery_rate)}
           </div>
         </div>
         <div style={{ background: "#f8fafc", padding: "8px", borderRadius: "6px" }}>
@@ -265,7 +154,7 @@ function SupplierPopup({ supplier, navigate }) {
         </div>
         <div style={{ background: "#f8fafc", padding: "8px", borderRadius: "6px" }}>
           <div style={{ fontSize: "10px", color: "#94a3b8", marginBottom: "2px" }}>ESG SCORE</div>
-          <div style={{ fontSize: "18px", fontWeight: 700, color: "#10b981" }}>{supplier.esg}</div>
+          <div style={{ fontSize: "18px", fontWeight: 700, color: "#10b981" }}>{supplier.esg_score}</div>
         </div>
       </div>
 
@@ -274,7 +163,7 @@ function SupplierPopup({ supplier, navigate }) {
           <div
             style={{
               height: "100%",
-              width: `${supplier.risk}%`,
+              width: `${supplier.risk_score}%`,
               background: riskColor,
               borderRadius: "3px",
               transition: "width 0.5s ease"
@@ -300,7 +189,7 @@ function SupplierPopup({ supplier, navigate }) {
           onClick={() =>
             navigate("/suppliers", {
               state: {
-                affectedSupplierIds: [supplier.id],
+                affectedSupplierIds: [supplier.supplier_id],
                 disruptionLabel: supplier.name
               }
             })
@@ -324,7 +213,7 @@ function SupplierPopup({ supplier, navigate }) {
           onClick={() =>
             navigate("/chat", {
               state: {
-                prompt: `Find an alternate supplier for ${supplier.name} in ${supplier.city}, ${supplier.country}.`
+                prompt: `Find an alternate supplier for ${supplier.name} in ${supplier.country}.`
               }
             })
           }
@@ -336,36 +225,38 @@ function SupplierPopup({ supplier, navigate }) {
   )
 }
 
-function CurvedRoute({ route, fromSupplier, toSupplier, onSelect, layerRef }) {
-  const color = routeColors[route.status]
+function CurvedRoute({ shipment, onSelect, layerRef }) {
+  const color = routeColors[shipment.status] || routeColors.in_transit
   const midpoint = [
-    (fromSupplier.lat + toSupplier.lat) / 2 + (fromSupplier.lat > toSupplier.lat ? 6 : -6),
-    (fromSupplier.lng + toSupplier.lng) / 2 + (fromSupplier.lng > toSupplier.lng ? -10 : 10)
+    (shipment.origin_coordinates.lat + shipment.destination_coordinates.lat) / 2
+      + (shipment.origin_coordinates.lat > shipment.destination_coordinates.lat ? 6 : -6),
+    (shipment.origin_coordinates.lng + shipment.destination_coordinates.lng) / 2
+      + (shipment.origin_coordinates.lng > shipment.destination_coordinates.lng ? -10 : 10)
   ]
 
   return (
     <Polyline
       ref={layerRef}
       positions={[
-        [fromSupplier.lat, fromSupplier.lng],
+        [shipment.origin_coordinates.lat, shipment.origin_coordinates.lng],
         midpoint,
-        [toSupplier.lat, toSupplier.lng]
+        [shipment.destination_coordinates.lat, shipment.destination_coordinates.lng]
       ]}
       pathOptions={{
         color,
-        weight: route.status === "delayed" ? 3 : 2,
+        weight: shipment.status === "delayed" ? 3 : 2,
         opacity: 0.82,
-        dashArray: route.status === "delivered" ? null : "8,6"
+        dashArray: shipment.status === "delivered" ? null : "8,6"
       }}
       eventHandlers={{
-        click: () => onSelect(route)
+        click: () => onSelect(shipment)
       }}
     >
       <Popup maxWidth={220}>
         <div style={{ fontFamily: "Inter, sans-serif", padding: "4px" }}>
-          <div style={{ fontWeight: 700, marginBottom: "6px" }}>{route.id}</div>
+          <div style={{ fontWeight: 700, marginBottom: "6px" }}>{shipment.shipment_id}</div>
           <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "8px" }}>
-            {fromSupplier.city} -&gt; {toSupplier.city}
+            {shipment.origin} -&gt; {shipment.destination}
           </div>
           <div
             style={{
@@ -380,13 +271,13 @@ function CurvedRoute({ route, fromSupplier, toSupplier, onSelect, layerRef }) {
               textTransform: "uppercase"
             }}
           >
-            {route.status.replace("_", " ")}
+            {shipment.status.replace("_", " ")}
           </div>
-          <div style={{ fontSize: "12px", color: "#475569" }}>Value: {formatCurrency(route.value)}</div>
-          <div style={{ fontSize: "12px", color: "#475569" }}>ETA: {route.eta}</div>
-          {route.delay > 0 ? (
+          <div style={{ fontSize: "12px", color: "#475569" }}>Value: {formatCurrency(shipment.value_usd)}</div>
+          <div style={{ fontSize: "12px", color: "#475569" }}>ETA: {formatDate(shipment.eta)}</div>
+          {shipment.delay_days > 0 ? (
             <div style={{ fontSize: "12px", color: "#ef4444", fontWeight: 600, marginTop: "4px" }}>
-              Delayed by {route.delay} days
+              Delayed by {shipment.delay_days} days
             </div>
           ) : null}
         </div>
@@ -402,12 +293,12 @@ function DisruptionZone({ disruption, onSelect, layerRef }) {
     high: 80000,
     medium: 50000,
     low: 30000
-  }[disruption.severity]
+  }[disruption.severity] || 50000
 
   return (
     <>
       <Circle
-        center={[disruption.lat, disruption.lng]}
+        center={[disruption.coordinates.lat, disruption.coordinates.lng]}
         radius={radius * 1.5}
         pathOptions={{
           color,
@@ -419,7 +310,7 @@ function DisruptionZone({ disruption, onSelect, layerRef }) {
       />
       <Circle
         ref={layerRef}
-        center={[disruption.lat, disruption.lng]}
+        center={[disruption.coordinates.lat, disruption.coordinates.lng]}
         radius={radius}
         pathOptions={{
           color,
@@ -449,18 +340,31 @@ function DisruptionZone({ disruption, onSelect, layerRef }) {
               </span>
               <span style={{ fontSize: "11px", color: "#94a3b8" }}>{disruption.type.replace("_", " ")}</span>
             </div>
-            <div style={{ fontWeight: 700, fontSize: "15px", color: "#0f172a", marginBottom: "6px" }}>{disruption.title}</div>
-            <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "10px", lineHeight: "1.5" }}>{disruption.description}</div>
-            <div style={{ background: "#fef2f2", padding: "8px", borderRadius: "6px", marginBottom: "8px" }}>
-              <div style={{ fontSize: "11px", color: "#991b1b", fontWeight: 600 }}>Revenue Impact: {formatCurrency(disruption.revenue_impact)}</div>
-              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>{disruption.affected_shipments.length} shipments affected</div>
-              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>Resolution: {disruption.resolution}</div>
+            <div style={{ fontWeight: 700, fontSize: "15px", color: "#0f172a", marginBottom: "6px" }}>
+              {statusLabel(disruption.type)} Disruption
             </div>
-            <div style={{ fontSize: "10px", color: "#94a3b8" }}>Detected {disruption.detected}</div>
+            <div style={{ fontSize: "12px", color: "#64748b", marginBottom: "10px", lineHeight: "1.5" }}>
+              {disruption.description}
+            </div>
+            <div style={{ background: "#fef2f2", padding: "8px", borderRadius: "6px", marginBottom: "8px" }}>
+              <div style={{ fontSize: "11px", color: "#991b1b", fontWeight: 600 }}>
+                Revenue Impact: {formatCurrency(disruption.estimated_revenue_impact_usd)}
+              </div>
+              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                {disruption.affected_shipment_ids.length} shipments affected
+              </div>
+              <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                Resolution: {formatDate(disruption.estimated_resolution)}
+              </div>
+            </div>
+            <div style={{ fontSize: "10px", color: "#94a3b8" }}>Detected {formatRelativeTime(disruption.detected_at)}</div>
           </div>
         </Popup>
       </Circle>
-      <Marker position={[disruption.lat, disruption.lng]} icon={createDisruptionIcon(disruption.severity, disruption.type)} />
+      <Marker
+        position={[disruption.coordinates.lat, disruption.coordinates.lng]}
+        icon={createDisruptionIcon(disruption.severity, disruption.type)}
+      />
     </>
   )
 }
@@ -501,26 +405,26 @@ function DisruptionCard({ disruption, isSelected, onClick }) {
         <span className="text-xs font-bold uppercase" style={{ color: severityColor }}>
           {disruption.severity}
         </span>
-        <span className="text-xs text-slate-400">{disruption.detected}</span>
+        <span className="text-xs text-slate-400">{formatRelativeTime(disruption.detected_at)}</span>
       </div>
-      <div className="mb-1 text-sm font-semibold text-slate-800">{disruption.title}</div>
+      <div className="mb-1 text-sm font-semibold text-slate-800">{statusLabel(disruption.type)} Disruption</div>
       <div className="mb-2 line-clamp-2 text-xs text-slate-500">{disruption.description}</div>
       <div className="flex items-center justify-between text-xs">
-        <span className="text-slate-500">{formatCurrency(disruption.revenue_impact)}</span>
-        <span className="text-slate-400">{disruption.resolution}</span>
+        <span className="text-slate-500">{formatCurrency(disruption.estimated_revenue_impact_usd)}</span>
+        <span className="text-slate-400">{formatDate(disruption.estimated_resolution)}</span>
       </div>
-      <div className="mt-1 text-xs text-slate-400">{disruption.affected_shipments.length} shipments affected</div>
+      <div className="mt-1 text-xs text-slate-400">{disruption.affected_shipment_ids.length} shipments affected</div>
     </button>
   )
 }
 
-function ShipmentRow({ route, from, to, onClick }) {
+function ShipmentRow({ shipment, onClick }) {
   const statusTone = {
     in_transit: "bg-blue-50 text-blue-700",
     delayed: "bg-rose-50 text-rose-700",
     delivered: "bg-emerald-50 text-emerald-700",
     at_risk: "bg-amber-50 text-amber-700"
-  }[route.status]
+  }[shipment.status] || "bg-slate-100 text-slate-600"
 
   return (
     <button
@@ -530,17 +434,17 @@ function ShipmentRow({ route, from, to, onClick }) {
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
-          <span>{route.id}</span>
+          <span>{shipment.shipment_id}</span>
           <span className="text-slate-400">|</span>
           <span className="truncate text-slate-600">
-            {from?.city} -&gt; {to?.city}
+            {shipment.origin} -&gt; {shipment.destination}
           </span>
         </div>
         <div className="mt-1 flex items-center gap-2">
           <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${statusTone}`}>
-            {route.status.replace("_", " ")}
+            {shipment.status.replace("_", " ")}
           </span>
-          <span className="text-xs text-slate-500">{formatCurrency(route.value)}</span>
+          <span className="text-xs text-slate-500">{formatCurrency(shipment.value_usd)}</span>
         </div>
       </div>
       <span className="text-slate-300">-&gt;</span>
@@ -562,12 +466,21 @@ export default function SupplyChainMap() {
     disruptions: true
   })
 
-  const filteredSuppliers = useMemo(() => getFilteredSuppliers(filter), [filter])
-  const suppliersById = useMemo(
-    () => Object.fromEntries(SUPPLIER_LOCATIONS.map((supplier) => [supplier.id, supplier])),
-    []
-  )
-  const delayedCount = SHIPMENT_ROUTES.filter((route) => route.status === "delayed").length
+  const { data, loading, error, refetch } = useApi(async () => api.getMapData(), [])
+
+  const model = useMemo(() => {
+    const suppliers = data?.suppliers || []
+    const shipments = data?.shipments || []
+    const disruptions = data?.disruptions || []
+
+    return {
+      suppliers,
+      disruptions,
+      shipments,
+      filteredSuppliers: getFilteredSuppliers(filter, suppliers),
+      delayedCount: shipments.filter((shipment) => shipment.status === "delayed").length
+    }
+  }, [data, filter])
 
   function setMapInstance(map) {
     mapRef.current = map
@@ -582,20 +495,46 @@ export default function SupplyChainMap() {
   }
 
   function focusSupplier(supplier) {
-    flyToLocation(supplier.lat, supplier.lng, 6)
-    supplierRefs.current[supplier.id]?.openPopup?.()
+    flyToLocation(supplier.coordinates.lat, supplier.coordinates.lng, 6)
+    supplierRefs.current[supplier.supplier_id]?.openPopup?.()
   }
 
-  function focusRoute(route) {
-    const from = suppliersById[route.from]
-    if (from) flyToLocation(from.lat, from.lng, 5)
-    routeRefs.current[route.id]?.openPopup?.()
+  function focusRoute(shipment) {
+    flyToLocation(shipment.origin_coordinates.lat, shipment.origin_coordinates.lng, 5)
+    routeRefs.current[shipment.shipment_id]?.openPopup?.()
   }
 
   function focusDisruption(disruption) {
-    setSelectedDisruptionId(disruption.id)
-    flyToLocation(disruption.lat, disruption.lng, 7)
-    disruptionRefs.current[disruption.id]?.openPopup?.()
+    setSelectedDisruptionId(disruption.disruption_id)
+    flyToLocation(disruption.coordinates.lat, disruption.coordinates.lng, 7)
+    disruptionRefs.current[disruption.disruption_id]?.openPopup?.()
+  }
+
+  if (error) {
+    return (
+      <EmptyState
+        icon={AlertTriangle}
+        title="Supply chain map unavailable"
+        description={error}
+        action={
+          <button
+            type="button"
+            onClick={refetch}
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white"
+          >
+            Retry
+          </button>
+        }
+      />
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[70vh] items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-card">
+        <Spinner size="lg" />
+      </div>
+    )
   }
 
   return (
@@ -606,10 +545,10 @@ export default function SupplyChainMap() {
       <div className="flex w-80 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white">
         <div className="border-b border-slate-100 p-4">
           <div className="grid grid-cols-2 gap-2">
-            <StatPill icon={Building2} label="Suppliers" value={SUPPLIER_LOCATIONS.length} tone="blue" />
-            <StatPill icon={AlertTriangle} label="Disruptions" value={DISRUPTION_ZONES.length} tone="red" />
-            <StatPill icon={Ship} label="Shipments" value={SHIPMENT_ROUTES.length} tone="blue" />
-            <StatPill icon={Truck} label="Delayed" value={delayedCount} tone="amber" />
+            <StatPill icon={Building2} label="Suppliers" value={model.suppliers.length} tone="blue" />
+            <StatPill icon={AlertTriangle} label="Disruptions" value={model.disruptions.length} tone="red" />
+            <StatPill icon={Ship} label="Shipments" value={model.shipments.length} tone="blue" />
+            <StatPill icon={Truck} label="Delayed" value={model.delayedCount} tone="amber" />
           </div>
         </div>
 
@@ -638,17 +577,17 @@ export default function SupplyChainMap() {
             <h3 className="text-sm font-semibold text-slate-800">
               Active Disruptions
               <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">
-                {DISRUPTION_ZONES.length}
+                {model.disruptions.length}
               </span>
             </h3>
           </div>
 
           <div className="space-y-2 p-3">
-            {DISRUPTION_ZONES.map((disruption) => (
+            {model.disruptions.map((disruption) => (
               <DisruptionCard
-                key={disruption.id}
+                key={disruption.disruption_id}
                 disruption={disruption}
-                isSelected={selectedDisruptionId === disruption.id}
+                isSelected={selectedDisruptionId === disruption.disruption_id}
                 onClick={() => focusDisruption(disruption)}
               />
             ))}
@@ -659,11 +598,9 @@ export default function SupplyChainMap() {
           </div>
 
           <div className="space-y-1 p-3">
-            {SHIPMENT_ROUTES.map((route) => {
-              const from = suppliersById[route.from]
-              const to = suppliersById[route.to]
-              return <ShipmentRow key={route.id} route={route} from={from} to={to} onClick={() => focusRoute(route)} />
-            })}
+            {model.shipments.map((shipment) => (
+              <ShipmentRow key={shipment.shipment_id} shipment={shipment} onClick={() => focusRoute(shipment)} />
+            ))}
           </div>
         </div>
       </div>
@@ -676,9 +613,9 @@ export default function SupplyChainMap() {
           </span>
 
           {[
-            { key: "suppliers", label: "Suppliers", icon: Building2, count: filteredSuppliers.length },
-            { key: "routes", label: "Routes", icon: Anchor, count: SHIPMENT_ROUTES.length },
-            { key: "disruptions", label: "Disruptions", icon: AlertTriangle, count: DISRUPTION_ZONES.length }
+            { key: "suppliers", label: "Suppliers", icon: Building2, count: model.filteredSuppliers.length },
+            { key: "routes", label: "Routes", icon: Anchor, count: model.shipments.length },
+            { key: "disruptions", label: "Disruptions", icon: AlertTriangle, count: model.disruptions.length }
           ].map((layer) => (
             <button
               key={layer.key}
@@ -765,15 +702,15 @@ export default function SupplyChainMap() {
             />
 
             {layers.suppliers &&
-              filteredSuppliers.map((supplier) => (
+              model.filteredSuppliers.map((supplier) => (
                 <Marker
-                  key={supplier.id}
+                  key={supplier.supplier_id}
                   ref={(node) => {
-                    if (node) supplierRefs.current[supplier.id] = node
-                    else delete supplierRefs.current[supplier.id]
+                    if (node) supplierRefs.current[supplier.supplier_id] = node
+                    else delete supplierRefs.current[supplier.supplier_id]
                   }}
-                  position={[supplier.lat, supplier.lng]}
-                  icon={createSupplierIcon(supplier.risk)}
+                  position={[supplier.coordinates.lat, supplier.coordinates.lng]}
+                  icon={createSupplierIcon(supplier.risk_score)}
                   eventHandlers={{
                     click: () => focusSupplier(supplier)
                   }}
@@ -785,35 +722,27 @@ export default function SupplyChainMap() {
               ))}
 
             {layers.routes &&
-              SHIPMENT_ROUTES.map((route) => {
-                const fromSupplier = suppliersById[route.from]
-                const toSupplier = suppliersById[route.to]
-                if (!fromSupplier || !toSupplier) return null
-
-                return (
-                  <CurvedRoute
-                    key={route.id}
-                    route={route}
-                    fromSupplier={fromSupplier}
-                    toSupplier={toSupplier}
-                    onSelect={focusRoute}
-                    layerRef={(node) => {
-                      if (node) routeRefs.current[route.id] = node
-                      else delete routeRefs.current[route.id]
-                    }}
-                  />
-                )
-              })}
+              model.shipments.map((shipment) => (
+                <CurvedRoute
+                  key={shipment.shipment_id}
+                  shipment={shipment}
+                  onSelect={focusRoute}
+                  layerRef={(node) => {
+                    if (node) routeRefs.current[shipment.shipment_id] = node
+                    else delete routeRefs.current[shipment.shipment_id]
+                  }}
+                />
+              ))}
 
             {layers.disruptions &&
-              DISRUPTION_ZONES.map((disruption) => (
+              model.disruptions.map((disruption) => (
                 <DisruptionZone
-                  key={disruption.id}
+                  key={disruption.disruption_id}
                   disruption={disruption}
                   onSelect={focusDisruption}
                   layerRef={(node) => {
-                    if (node) disruptionRefs.current[disruption.id] = node
-                    else delete disruptionRefs.current[disruption.id]
+                    if (node) disruptionRefs.current[disruption.disruption_id] = node
+                    else delete disruptionRefs.current[disruption.disruption_id]
                   }}
                 />
               ))}

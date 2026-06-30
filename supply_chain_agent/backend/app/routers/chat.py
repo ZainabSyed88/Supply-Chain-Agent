@@ -7,12 +7,14 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.core.logging import get_logger
 from app.models.agent import ChatRequest
 from app.models.db_models import ChatHistoryRecord, User
 from app.services.auth_service import require_viewer
 from app.services.fallback_copilot import FallbackCopilotService
 
 router = APIRouter()
+logger = get_logger("chat")
 
 
 def _to_dict(item):
@@ -282,7 +284,13 @@ async def send_chat(
             ai_response = result["content"]
             model_used = result.get("model_used", "openai")
             confidence = 0.92
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "LLM chat failed; falling back to local copilot response",
+                user_id=current_user.id,
+                session_id=session_id,
+                error=str(exc),
+            )
             ai_response = ""
 
     if not ai_response:

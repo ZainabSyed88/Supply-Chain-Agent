@@ -68,21 +68,13 @@ export const MAP_COLORS = {
 export const AGENT_TIERS = [
   [
     { id: "supplier_monitor", label: "Supplier Monitor", icon: "factory" },
-    { id: "disruption_detector", label: "Disruption Detector", icon: "zap" },
-    { id: "anomaly_detection", label: "Anomaly Detection", icon: "scan" }
+    { id: "disruption_detector", label: "Disruption Detector", icon: "zap" }
   ],
   [
     { id: "risk_assessor", label: "Risk Assessor", icon: "shield" },
-    { id: "mitigation", label: "Mitigation", icon: "sparkles" },
-    { id: "financial_impact", label: "Financial Impact", icon: "banknote" },
-    { id: "esg_carbon", label: "ESG Carbon", icon: "leaf" }
+    { id: "mitigation", label: "Mitigation", icon: "sparkles" }
   ],
   [
-    { id: "alternate_supplier", label: "Alternate Supplier", icon: "network" },
-    { id: "predictive_risk", label: "Predictive Risk", icon: "line-chart" }
-  ],
-  [
-    { id: "report_generation", label: "Report Generation", icon: "file-text" },
     { id: "stakeholder_notification", label: "Stakeholder Notification", icon: "send" }
   ]
 ]

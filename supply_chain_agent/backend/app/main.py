@@ -34,6 +34,37 @@ configure_logging()
 logger = get_logger("app")
 
 
+def validate_startup_configuration() -> None:
+    missing: list[str] = []
+    if not settings.secret_key:
+        missing.append("SECRET_KEY")
+
+    if missing:
+        raise RuntimeError(
+            "Missing required environment variables: "
+            + ", ".join(missing)
+            + ". Set them in Railway or backend/.env before starting the API."
+        )
+
+
+def validate_admin_bootstrap_configuration() -> None:
+    missing = [
+        env_name
+        for env_name, value in (
+            ("ADMIN_BOOTSTRAP_USERNAME", settings.admin_bootstrap_username),
+            ("ADMIN_BOOTSTRAP_EMAIL", settings.admin_bootstrap_email),
+            ("ADMIN_BOOTSTRAP_PASSWORD", settings.admin_bootstrap_password),
+        )
+        if not value
+    ]
+    if missing:
+        raise RuntimeError(
+            "Database is empty, but the initial admin bootstrap variables are missing: "
+            + ", ".join(missing)
+            + ". Set them in Railway or backend/.env before first startup."
+        )
+
+
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, Set[WebSocket]] = {}
@@ -473,21 +504,27 @@ async def run_pipeline_background(run_id: str):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    validate_startup_configuration()
     init_db()
     app.state.data_service = get_data_service()
     app.state.orchestrator = PipelineOrchestrator(app.state.data_service)
     db = SessionLocal()
     try:
         if db.query(User).count() == 0:
+            validate_admin_bootstrap_configuration()
             create_user(
                 db,
-                username="admin",
-                email="admin@chainpulse.ai",
-                full_name="ChainPulse Admin",
-                password="admin123",
+                username=settings.admin_bootstrap_username,
+                email=settings.admin_bootstrap_email,
+                full_name=settings.admin_bootstrap_full_name,
+                password=settings.admin_bootstrap_password,
                 role=UserRole.admin,
             )
-            logger.info("Default admin created: admin / admin123")
+            logger.info(
+                "Initial admin bootstrap user created",
+                username=settings.admin_bootstrap_username,
+                email=settings.admin_bootstrap_email,
+            )
     finally:
         db.close()
     try:
