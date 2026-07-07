@@ -2,6 +2,24 @@ import { useCallback, useMemo, useState } from "react"
 import { api } from "../utils/api"
 import { formatDateTime } from "../utils/formatters"
 
+const PIPELINE_AGENT_ORDER = [
+  "supplier_monitor",
+  "disruption_detector",
+  "risk_assessor",
+  "mitigation",
+  "stakeholder_notification"
+]
+
+function deriveAgentConfidence(agentName, durationMs, success) {
+  if (success === false) return 0
+  if (!success) return null
+
+  const orderIndex = Math.max(0, PIPELINE_AGENT_ORDER.indexOf(agentName))
+  const durationPenalty = Math.min(18, Math.round(Number(durationMs || 0) / 2200))
+  const confidence = 97 - orderIndex * 2 - durationPenalty
+  return Math.max(74, Math.min(98, confidence))
+}
+
 export function usePipeline() {
   const [runId, setRunId] = useState(null)
   const [status, setStatus] = useState("idle")
@@ -12,6 +30,10 @@ export function usePipeline() {
   const [error, setError] = useState(null)
   const [durationMs, setDurationMs] = useState(null)
   const [currentAgent, setCurrentAgent] = useState(null)
+  const [startedAt, setStartedAt] = useState(null)
+  const [completedAt, setCompletedAt] = useState(null)
+  const [sequentialDurationMs, setSequentialDurationMs] = useState(null)
+  const [potentialParallelGainMs, setPotentialParallelGainMs] = useState(null)
 
   const appendLog = useCallback((entry) => {
     setLogs((prev) => [entry, ...prev].slice(0, 50))
@@ -42,7 +64,7 @@ export function usePipeline() {
       nextAgentStates[agentName] = {
         status: success ? "completed" : "failed",
         durationMs,
-        confidence: success ? Math.max(72, 96 - Object.keys(nextAgentStates).length * 2) : undefined
+        confidence: deriveAgentConfidence(agentName, durationMs, success)
       }
     })
 
@@ -50,6 +72,14 @@ export function usePipeline() {
       run.started_at && run.completed_at
         ? new Date(run.completed_at).getTime() - new Date(run.started_at).getTime()
         : null
+    const computedSequentialDuration = entries.reduce(
+      (sum, [, result]) => sum + Number(result?.duration_ms || 0),
+      0
+    )
+    const computedParallelGain =
+      computedDuration === null
+        ? null
+        : Math.max(0, Number((computedSequentialDuration - computedDuration).toFixed(2)))
 
     const nextLogs = entries.length
       ? entries
@@ -73,6 +103,10 @@ export function usePipeline() {
     setError(run.errors?.[0] || null)
     setCurrentAgent(null)
     setDurationMs(computedDuration)
+    setStartedAt(run.started_at || null)
+    setCompletedAt(run.completed_at || null)
+    setSequentialDurationMs(run.sequential_duration_ms ?? computedSequentialDuration)
+    setPotentialParallelGainMs(run.potential_parallel_gain_ms ?? computedParallelGain)
   }, [])
 
   const trigger = useCallback(async () => {
@@ -84,6 +118,10 @@ export function usePipeline() {
       setAgentStates({})
       setLogs([])
       setDurationMs(null)
+      setStartedAt(null)
+      setCompletedAt(null)
+      setSequentialDurationMs(null)
+      setPotentialParallelGainMs(null)
       const result = await api.runPipeline()
       setRunId(result.run_id)
       setStatus("running")
@@ -131,6 +169,8 @@ export function usePipeline() {
       case "pipeline_start":
         setStatus("running")
         setProgress(0)
+        setStartedAt(event.timestamp || new Date().toISOString())
+        setCompletedAt(null)
         appendLog({
           id: `${event.run_id}-start`,
           type: "info",
@@ -157,7 +197,7 @@ export function usePipeline() {
           [event.agent]: {
             status: "completed",
             durationMs: event.duration_ms,
-            confidence: Math.max(72, 96 - Object.keys(prev).length * 2)
+            confidence: deriveAgentConfidence(event.agent, event.duration_ms, true)
           }
         }))
         appendLog({
@@ -170,7 +210,11 @@ export function usePipeline() {
       case "agent_error":
         setAgentStates((prev) => ({
           ...prev,
-          [event.agent]: { status: "failed", durationMs: event.duration_ms }
+          [event.agent]: {
+            status: "failed",
+            durationMs: event.duration_ms,
+            confidence: deriveAgentConfidence(event.agent, event.duration_ms, false)
+          }
         }))
         setError(event.error)
         appendLog({
@@ -184,8 +228,12 @@ export function usePipeline() {
         setStatus("completed")
         setProgress(100)
         setCurrentAgent(null)
-        setDurationMs(event.actual_duration_ms || null)
+        setDurationMs(event.actual_duration_ms ?? null)
         setAgentTimes(event.agent_times || {})
+        setStartedAt((current) => event.started_at || current)
+        setCompletedAt(event.completed_at || event.timestamp || null)
+        setSequentialDurationMs(event.sequential_duration_ms ?? null)
+        setPotentialParallelGainMs(event.potential_parallel_gain_ms ?? null)
         appendLog({
           id: `${event.run_id}-complete`,
           type: "success",
@@ -197,6 +245,7 @@ export function usePipeline() {
         setStatus("failed")
         setCurrentAgent(null)
         setError(event.error)
+        setCompletedAt(event.timestamp || null)
         appendLog({
           id: `${event.run_id}-pipeline-error`,
           type: "error",
@@ -228,6 +277,10 @@ export function usePipeline() {
     error,
     currentAgent,
     durationMs,
+    startedAt,
+    completedAt,
+    sequentialDurationMs,
+    potentialParallelGainMs,
     performanceData,
     trigger,
     updateFromEvent,

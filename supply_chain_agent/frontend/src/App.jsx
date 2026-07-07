@@ -10,6 +10,7 @@ import Landing from "./pages/Landing"
 import Orders from "./pages/Orders"
 import Reports from "./pages/Reports"
 import Shipments from "./pages/Shipments"
+import Simulator from "./pages/Simulator"
 import Suppliers from "./pages/Suppliers"
 import Support from "./pages/Support"
 import SupplyChainMap from "./pages/SupplyChainMap"
@@ -35,6 +36,7 @@ export default function App() {
               <Route path="/orders" element={<Orders />} />
               <Route path="/suppliers" element={<Suppliers />} />
               <Route path="/shipments" element={<Shipments />} />
+              <Route path="/simulator" element={<Simulator />} />
               <Route path="/warehouses" element={<Warehouses />} />
               <Route path="/esg" element={<ESG />} />
               <Route path="/reports" element={<Reports />} />

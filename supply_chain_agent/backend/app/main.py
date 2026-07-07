@@ -350,6 +350,164 @@ def persist_alert(*, user_id: str | None, severity: str, type_: str, title: str,
         db.close()
 
 
+def build_pipeline_proactive_alerts(run: PipelineRun) -> list[dict[str, object]]:
+    data_service = app.state.data_service
+    suppliers = sorted(data_service.get_suppliers(), key=lambda supplier: supplier.risk_score, reverse=True)
+    disruptions = sorted(
+        data_service.get_disruptions(active_only=True),
+        key=lambda disruption: (
+            disruption.severity == "critical",
+            disruption.severity == "high",
+            disruption.estimated_revenue_impact_usd,
+        ),
+        reverse=True,
+    )
+    shipments = list(data_service.get_shipments())
+    inventory_alerts = sorted(data_service.get_inventory_alerts(), key=lambda item: item.get("stock_level", 0))
+    risk_thresholds = data_service.get_supplier_risk_thresholds()
+    supplier_by_id = {supplier.supplier_id: supplier for supplier in suppliers}
+    shipment_by_id = {shipment.shipment_id: shipment for shipment in shipments}
+    exposed_shipment_counts: dict[str, int] = {}
+    disruption_counts: dict[str, int] = {}
+
+    for disruption in disruptions:
+        for supplier_id in set(disruption.affected_supplier_ids):
+            disruption_counts[supplier_id] = disruption_counts.get(supplier_id, 0) + 1
+        for shipment_id in set(disruption.affected_shipment_ids):
+            shipment = shipment_by_id.get(shipment_id)
+            if not shipment:
+                continue
+            exposed_shipment_counts[shipment.supplier_id] = exposed_shipment_counts.get(shipment.supplier_id, 0) + 1
+
+    alerts: list[dict[str, object]] = []
+    timestamp = datetime.utcnow().isoformat() + "Z"
+    supplier_cutoff = 85.0 if any(supplier.risk_score >= 85 for supplier in suppliers) else risk_thresholds["critical"]
+
+    critical_suppliers = [
+        supplier
+        for supplier in suppliers
+        if supplier.risk_score >= supplier_cutoff
+        and (
+            supplier.risk_score >= 85
+            or disruption_counts.get(supplier.supplier_id, 0) > 0
+            or exposed_shipment_counts.get(supplier.supplier_id, 0) > 0
+        )
+    ]
+    for supplier in critical_suppliers[:2]:
+        disruption_count = disruption_counts.get(supplier.supplier_id, 0)
+        exposed_shipment_count = exposed_shipment_counts.get(supplier.supplier_id, 0)
+        title = (
+            f"Critical: {supplier.name} just hit risk {round(supplier.risk_score)}"
+            if supplier.risk_score >= 85
+            else f"Critical supplier risk: {supplier.name} at {supplier.risk_score:.1f}"
+        )
+        if disruption_count or exposed_shipment_count:
+            message = (
+                f"{supplier.country} {supplier.category} supplier is above the critical threshold "
+                f"({risk_thresholds['critical']:.1f}) with {disruption_count} active disruption(s) "
+                f"and {exposed_shipment_count} exposed shipment(s)."
+            )
+        else:
+            message = (
+                f"{supplier.country} {supplier.category} supplier is above the extreme risk threshold "
+                f"({supplier_cutoff:.1f}) without active disruption linkage yet. Review contingency coverage now."
+            )
+        alerts.append({
+            "event": "new_alert",
+            "run_id": run.run_id,
+            "type": "error",
+            "severity": "critical",
+            "title": title,
+            "message": message,
+            "category": "supplier_risk",
+            "timestamp": timestamp,
+            "proactive": True,
+        })
+
+    for disruption in [item for item in disruptions if item.severity == "critical"][:1]:
+        alerts.append({
+            "event": "new_alert",
+            "run_id": run.run_id,
+            "type": "error",
+            "severity": "critical",
+            "title": f"Critical disruption: {disruption.type.replace('_', ' ')} exposure is rising",
+            "message": (
+                f"{len(disruption.affected_supplier_ids)} supplier(s) and {len(disruption.affected_shipment_ids)} shipment(s) "
+                f"are exposed with {disruption.estimated_revenue_impact_usd:,.0f} USD in modeled revenue impact."
+            ),
+            "category": "disruption",
+            "timestamp": timestamp,
+            "proactive": True,
+        })
+
+    escalated_shipments = sorted(
+        [
+            shipment
+            for shipment in shipments
+            if shipment.status in {"delayed", "at_risk"} and (shipment.delay_days >= 5 or shipment.value_usd >= 250000)
+        ],
+        key=lambda shipment: (shipment.delay_days, shipment.value_usd),
+        reverse=True,
+    )
+    if escalated_shipments:
+        shipment = escalated_shipments[0]
+        supplier = supplier_by_id.get(shipment.supplier_id)
+        alerts.append({
+            "event": "new_alert",
+            "run_id": run.run_id,
+            "type": "warning",
+            "severity": "high",
+            "title": f"Shipment escalation: {shipment.shipment_id} is slipping",
+            "message": (
+                f"{supplier.name if supplier else shipment.supplier_id} to {shipment.destination} is {shipment.delay_days} day(s) behind "
+                f"with {shipment.value_usd:,.0f} USD at risk."
+            ),
+            "category": "shipment",
+            "timestamp": timestamp,
+            "proactive": True,
+        })
+
+    critical_inventory = [alert for alert in inventory_alerts if int(alert.get("stock_level", 0)) < 25]
+    if critical_inventory:
+        top_inventory = critical_inventory[0]
+        alerts.append({
+            "event": "new_alert",
+            "run_id": run.run_id,
+            "type": "warning",
+            "severity": "high",
+            "title": f"Inventory buffer is tightening on {top_inventory['sku_id']}",
+            "message": (
+                f"{len(critical_inventory)} SKU(s) are now below the critical stock buffer. "
+                f"{top_inventory['sku_id']} is down to {top_inventory['stock_level']} units."
+            ),
+            "category": "inventory",
+            "timestamp": timestamp,
+            "proactive": True,
+        })
+
+    deduped_alerts: list[dict[str, object]] = []
+    seen_titles: set[str] = set()
+    for alert in alerts:
+        title = str(alert.get("title", ""))
+        if not title or title in seen_titles:
+            continue
+        seen_titles.add(title)
+        deduped_alerts.append(alert)
+
+    return deduped_alerts[:3]
+
+
+async def dispatch_alert_event(alert: dict[str, object]) -> None:
+    persist_alert(
+        user_id=None,
+        severity=str(alert.get("severity", "info")),
+        type_=str(alert.get("category") or alert.get("type") or "alert"),
+        title=str(alert.get("title", "Alert")),
+        message=str(alert.get("message", "")),
+    )
+    await alerts_manager.broadcast_alert(alert)
+
+
 def serialize_ticket_record(record: TicketRecord) -> dict[str, object]:
     return {
         "id": record.id,
@@ -442,32 +600,25 @@ async def run_pipeline_background(run_id: str):
             duration_seconds = 0.0
             if run.completed_at and run.started_at:
                 duration_seconds = (run.completed_at - run.started_at).total_seconds()
-            persist_alert(
-                user_id=None,
-                severity="info",
-                type_="pipeline",
-                title="Pipeline Complete",
-                message=f"Full analysis completed in {duration_seconds:.1f}s",
-            )
-            await alerts_manager.broadcast_alert({
+            await dispatch_alert_event({
                 "event": "new_alert",
+                "run_id": run.run_id,
+                "category": "pipeline",
                 "type": "success",
                 "severity": "info",
                 "title": "Pipeline Complete",
                 "message": f"Full analysis completed in {duration_seconds:.1f}s",
                 "timestamp": datetime.utcnow().isoformat() + "Z",
             })
+            for alert in build_pipeline_proactive_alerts(run):
+                await asyncio.sleep(0.15)
+                await dispatch_alert_event(alert)
             await send_pipeline_completion_email(run)
         elif run.status == "failed":
-            persist_alert(
-                user_id=None,
-                severity="critical",
-                type_="pipeline",
-                title="Pipeline Failed",
-                message="Pipeline execution failed. See run details for more information.",
-            )
-            await alerts_manager.broadcast_alert({
+            await dispatch_alert_event({
                 "event": "new_alert",
+                "run_id": run.run_id,
+                "category": "pipeline",
                 "type": "error",
                 "severity": "critical",
                 "title": "Pipeline Failed",
@@ -479,21 +630,16 @@ async def run_pipeline_background(run_id: str):
         run.completed_at = datetime.utcnow()
         run.errors.append(str(exc))
         update_pipeline_record(run)
-        persist_alert(
-            user_id=None,
-            severity="critical",
-            type_="pipeline",
-            title="Pipeline Error",
-            message=str(exc),
-        )
         await manager.broadcast(run_id, {
             "event": "pipeline_error",
             "run_id": run_id,
             "error": str(exc),
             "timestamp": datetime.utcnow().isoformat() + "Z",
         })
-        await alerts_manager.broadcast_alert({
+        await dispatch_alert_event({
             "event": "new_alert",
+            "run_id": run_id,
+            "category": "pipeline",
             "type": "error",
             "severity": "critical",
             "title": "Pipeline Error",

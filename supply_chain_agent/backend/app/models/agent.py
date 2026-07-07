@@ -34,3 +34,4 @@ class ChatRequest(BaseModel):
     history: list[ChatHistoryMessage | dict] = Field(default_factory=list)
     include_context: bool = True
     session_id: str | None = None
+    stream: bool = False

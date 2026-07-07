@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion"
+﻿import { AnimatePresence, motion } from "framer-motion"
 import {
   Activity,
   ArrowRight,
@@ -26,19 +26,25 @@ import {
   Workflow,
   Zap
 } from "lucide-react"
-import { useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 import ProductDemo from "../components/ProductDemo"
 import { useAuth } from "../hooks/useAuth"
 
 const navItems = [
-  { label: "About", href: "#about" },
-  { label: "Tour", href: "#tour" },
-  { label: "Capabilities", href: "#capabilities" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "FAQ", href: "#faq" },
-  { label: "Contact", href: "#contact" }
+  { label: "About", targetId: "about", previewAlign: "start" },
+  { label: "Tour", targetId: "tour", previewAlign: "center" },
+  { label: "Capabilities", targetId: "capabilities", previewAlign: "center" },
+  { label: "Pricing", targetId: "pricing", previewAlign: "center" },
+  { label: "FAQ", targetId: "faq", previewAlign: "center" },
+  { label: "Contact", targetId: "contact", previewAlign: "end" }
 ]
+
+const aboutSummary =
+  "An AI-powered multi-agent intelligence platform that monitors suppliers, analyzes global events, forecasts risks, and recommends mitigation strategies in real time."
+
+const tourSummary =
+  "A quick snapshot of specialized AI agents, disruption accuracy, risk forecasting, cost reduction, and live shipments monitored."
 
 const stats = [
   { label: "Specialized AI Agents", value: "16" },
@@ -102,6 +108,14 @@ const showcaseCards = [
   { title: "Digital Twin", description: "Simulate alternate suppliers, route shifts, and inventory policies before revenue is impacted.", icon: Map }
 ]
 
+const showcaseBarGradients = [
+  "linear-gradient(180deg, rgba(103, 232, 249, 0.82) 0%, rgba(59, 130, 246, 0.34) 100%)",
+  "linear-gradient(180deg, rgba(147, 197, 253, 0.85) 0%, rgba(79, 70, 229, 0.34) 100%)",
+  "linear-gradient(180deg, rgba(110, 231, 183, 0.82) 0%, rgba(16, 185, 129, 0.32) 100%)",
+  "linear-gradient(180deg, rgba(253, 186, 116, 0.84) 0%, rgba(249, 115, 22, 0.32) 100%)",
+  "linear-gradient(180deg, rgba(196, 181, 253, 0.84) 0%, rgba(139, 92, 246, 0.32) 100%)"
+]
+
 const steps = [
   "Monitor suppliers, logistics, inventory, and global events continuously.",
   "AI agents analyze disruptions, dependencies, and financial exposure.",
@@ -141,6 +155,12 @@ const testimonials = [
     title: "Logistics Manager",
     company: "Consumer goods network"
   }
+]
+
+const contactMethods = [
+  { icon: Mail, label: "Email", value: "enterprise@chainpulse.ai" },
+  { icon: Phone, label: "Phone", value: "+1 (555) 014-2026" },
+  { icon: Globe2, label: "Coverage", value: "Global supplier and logistics networks" }
 ]
 
 const pricing = [
@@ -201,6 +221,50 @@ const faqs = [
   }
 ]
 
+const navPreviewContent = {
+  about: {
+    eyebrow: "Overview",
+    title: "What ChainPulse covers",
+    summary: aboutSummary
+  },
+  tour: {
+    eyebrow: "Quick tour",
+    title: "What the metrics section shows",
+    summary: tourSummary
+  },
+  capabilities: {
+    eyebrow: "Capabilities",
+    title: "Included intelligence modules",
+    items: capabilities.map((capability) => ({
+      label: capability.label
+    }))
+  },
+  pricing: {
+    eyebrow: "Pricing",
+    title: "Current plan structure",
+    items: pricing.map((tier) => ({
+      label: tier.name,
+      detail: tier.features[0],
+      badge: tier.featured ? "Popular" : null
+    }))
+  },
+  faq: {
+    eyebrow: "FAQ",
+    title: "Questions teams usually ask",
+    items: faqs.slice(0, 2).map((item) => ({
+      label: item.question
+    }))
+  },
+  contact: {
+    eyebrow: "Contact",
+    title: "Ways to reach the team",
+    items: contactMethods.map((method) => ({
+      label: method.label,
+      detail: method.value
+    }))
+  }
+}
+
 const sectionReveal = {
   hidden: { opacity: 0, y: 32 },
   visible: {
@@ -239,13 +303,408 @@ function GlassCard({ children, className = "" }) {
   )
 }
 
+function HeroDashboardMockup() {
+  const kpis = [
+    { label: "Active Suppliers", value: "25", valueClass: "text-cyan-300" },
+    { label: "Revenue at Risk", value: "$4.8M", valueClass: "text-rose-300" },
+    { label: "Disruptions", value: "27", valueClass: "text-amber-300" }
+  ]
+
+  const regions = [
+    {
+      region: "Asia Pacific",
+      risk: "Critical",
+      panel: "border-rose-400/30 bg-rose-400/12",
+      swatch: "bg-rose-400/70",
+      label: "text-rose-200"
+    },
+    {
+      region: "Europe",
+      risk: "Medium",
+      panel: "border-teal-400/30 bg-teal-400/12",
+      swatch: "bg-teal-400/70",
+      label: "text-teal-200"
+    },
+    {
+      region: "Americas",
+      risk: "Low",
+      panel: "border-sky-400/30 bg-sky-400/12",
+      swatch: "bg-sky-400/70",
+      label: "text-sky-200"
+    },
+    {
+      region: "Middle East",
+      risk: "High",
+      panel: "border-amber-400/30 bg-amber-400/12",
+      swatch: "bg-amber-400/70",
+      label: "text-amber-200"
+    }
+  ]
+
+  return (
+    <GlassCard className="mx-auto w-full max-w-2xl overflow-hidden rounded-[32px] border-white/14 bg-[linear-gradient(145deg,rgba(15,23,42,0.94),rgba(9,15,31,0.92))] p-4 sm:p-5 lg:ml-auto">
+      <div className="grid gap-3">
+        <div className="grid gap-3 sm:grid-cols-3">
+          {kpis.map((kpi) => (
+            <div key={kpi.label} className="rounded-[22px] border border-white/10 bg-slate-950/55 p-4">
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">{kpi.label}</p>
+              <p className={`mt-2 text-2xl font-semibold ${kpi.valueClass}`}>{kpi.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+          <div className="rounded-[24px] border border-white/10 bg-slate-950/55 p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">Command Center</p>
+                <h3 className="mt-2 text-2xl font-semibold text-white">Global Risk Map</h3>
+              </div>
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-200">
+                Live
+              </span>
+            </div>
+
+            <div className="relative mt-5 h-52 overflow-hidden rounded-[20px] border border-white/8 bg-[radial-gradient(circle_at_24%_26%,rgba(34,211,238,0.22),transparent_18%),radial-gradient(circle_at_72%_58%,rgba(59,130,246,0.2),transparent_20%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.7))]">
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(0deg,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:28px_28px]" />
+              {[
+                "top-[26%] left-[20%] bg-emerald-400/75",
+                "top-[44%] left-[60%] bg-rose-400/80",
+                "top-[68%] left-[34%] bg-amber-300/75"
+              ].map((item) => (
+                <span key={item} className={`absolute h-4 w-4 rounded-full blur-[1px] ${item}`} />
+              ))}
+              <svg viewBox="0 0 420 200" className="absolute inset-0 h-full w-full opacity-85">
+                <path
+                  d="M28 138 C92 128, 138 72, 184 88 S266 150, 316 102 S374 76, 408 110"
+                  fill="none"
+                  stroke="url(#heroPulseLine)"
+                  strokeWidth="5"
+                  strokeLinecap="round"
+                />
+                <defs>
+                  <linearGradient id="heroPulseLine" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#22d3ee" />
+                    <stop offset="55%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#8b5cf6" />
+                  </linearGradient>
+                </defs>
+              </svg>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            <div className="rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Revenue Impact Meter</p>
+                  <p className="mt-2 text-3xl font-semibold text-white">$12.6M</p>
+                </div>
+                <CircleDollarSign className="h-5 w-5 text-cyan-200" />
+              </div>
+              <div className="mt-4 h-2.5 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full w-3/4 rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500" />
+              </div>
+              <p className="mt-3 text-xs leading-6 text-slate-400">
+                Modeled exposure if no mitigation actions are taken.
+              </p>
+            </div>
+
+            <div className="rounded-[24px] border border-white/10 bg-slate-950/55 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Multi-Agent Workflow</p>
+                  <p className="mt-2 text-lg font-semibold text-white">From signal to mitigation</p>
+                </div>
+                <Workflow className="h-5 w-5 text-violet-200" />
+              </div>
+              <div className="mt-4 flex items-center gap-2">
+                {[Truck, Radar, Workflow, ShieldCheck].map((Icon, index) => (
+                  <div key={index} className="flex flex-1 items-center gap-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.06]">
+                      <Icon className="h-4 w-4 text-cyan-100" />
+                    </div>
+                    {index < 3 ? <div className="h-px flex-1 bg-gradient-to-r from-cyan-400/60 to-violet-400/20" /> : null}
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-xs leading-6 text-slate-400">
+                Supplier monitor {"->"} event intelligence {"->"} mitigation planner {"->"} stakeholder alerting
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-[24px] border border-white/10 bg-slate-950/55 p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400">Risk Heatmap</p>
+              <p className="mt-2 text-lg font-semibold text-white">Regional stress signals</p>
+            </div>
+            <LineChart className="h-5 w-5 text-violet-200" />
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-4">
+            {regions.map((region) => (
+              <div key={region.region} className={`rounded-[18px] border p-3 ${region.panel}`}>
+                <div className={`h-12 rounded-xl ${region.swatch}`} />
+                <p className="mt-3 text-xs text-slate-300">{region.region}</p>
+                <p className={`mt-1 text-xs font-semibold uppercase tracking-[0.14em] ${region.label}`}>{region.risk}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </GlassCard>
+  )
+}
+
+function SectionNavButton({
+  label,
+  targetId,
+  previewKey,
+  preview,
+  previewAlign = "center",
+  previewId,
+  isOpen,
+  onOpenPreview,
+  onClosePreview,
+  onInteract,
+  className = ""
+}) {
+  const alignmentClass =
+    previewAlign === "start"
+      ? "left-0 origin-top-left"
+      : previewAlign === "end"
+        ? "right-0 origin-top-right"
+        : "left-1/2 -translate-x-1/2 origin-top"
+
+  return (
+    <div
+      className="relative"
+      data-nav-preview-root="true"
+      onMouseEnter={() => onOpenPreview?.(previewKey, targetId)}
+      onMouseLeave={() => onClosePreview?.(previewKey)}
+    >
+      <button
+        type="button"
+        title={label}
+        aria-label={`Go to ${label} section`}
+        aria-haspopup={preview ? "dialog" : undefined}
+        aria-expanded={preview ? isOpen : undefined}
+        aria-describedby={isOpen ? previewId : undefined}
+        onFocus={() => onOpenPreview?.(previewKey, targetId, true)}
+        onBlur={() => onClosePreview?.(previewKey)}
+        onClick={() => onInteract?.(targetId, previewKey, Boolean(preview))}
+        className={className}
+      >
+        {label}
+      </button>
+      <AnimatePresence>
+        {preview && isOpen ? (
+          <motion.div
+            id={previewId}
+            role="tooltip"
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 8 }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className={`absolute top-full z-30 mt-3 w-80 max-w-[calc(100vw-2rem)] rounded-[26px] border border-white/20 bg-[rgba(7,16,31,0.94)] p-4 shadow-[0_28px_90px_rgba(2,6,23,0.62)] backdrop-blur-xl ${alignmentClass}`}
+          >
+            <div className="rounded-[22px] border border-white/12 bg-[rgba(15,23,42,0.88)] p-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-200">
+                {preview.eyebrow}
+              </p>
+              <h3 className="mt-3 text-base font-semibold text-white">{preview.title}</h3>
+              {preview.summary ? (
+                <p className="mt-3 text-sm leading-6 text-slate-200">{preview.summary}</p>
+              ) : null}
+              {preview.items?.length ? (
+                <div className="mt-4 space-y-2">
+                  {preview.items.map((item) => (
+                    <div
+                      key={`${preview.title}-${item.label}`}
+                      className="rounded-2xl border border-white/10 bg-slate-950/60 px-3 py-2.5 shadow-[0_10px_30px_rgba(2,6,23,0.28)]"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-white">{item.label}</p>
+                          {item.detail ? (
+                            <p className="mt-1 text-xs leading-5 text-slate-300">{item.detail}</p>
+                          ) : null}
+                        </div>
+                        {item.badge ? (
+                          <span className="shrink-0 rounded-full border border-cyan-300/30 bg-cyan-300/14 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-50">
+                            {item.badge}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 export default function Landing() {
   const { isAuthenticated } = useAuth()
   const [openFaq, setOpenFaq] = useState(0)
+  const [activePreviewKey, setActivePreviewKey] = useState(null)
+  const [touchPreviewEnabled, setTouchPreviewEnabled] = useState(false)
+  const headerRef = useRef(null)
+  const previewTimerRef = useRef(null)
 
   const appHref = isAuthenticated ? "/dashboard" : "/auth?redirect=%2Fdashboard"
   const chatHref = isAuthenticated ? "/chat" : "/auth?redirect=%2Fchat"
   const authCta = isAuthenticated ? "Open App" : "Sign In"
+
+  const clearPreviewTimer = useCallback(() => {
+    if (previewTimerRef.current !== null) {
+      window.clearTimeout(previewTimerRef.current)
+      previewTimerRef.current = null
+    }
+  }, [])
+
+  const scrollToSection = useCallback((targetId, { behavior = "smooth" } = {}) => {
+    if (typeof window === "undefined" || !targetId) return
+
+    const target = document.getElementById(targetId)
+    if (!target) return
+
+    if (targetId === "about") {
+      window.scrollTo({ top: 0, behavior })
+      return
+    }
+
+    target.scrollIntoView({
+      behavior,
+      block: "start"
+    })
+  }, [])
+
+  const openPreview = useCallback((previewKey, targetId, immediate = false) => {
+    if (!navPreviewContent[targetId]) return
+
+    clearPreviewTimer()
+
+    if (immediate || touchPreviewEnabled) {
+      setActivePreviewKey(previewKey)
+      return
+    }
+
+    previewTimerRef.current = window.setTimeout(() => {
+      setActivePreviewKey(previewKey)
+      previewTimerRef.current = null
+    }, 150)
+  }, [clearPreviewTimer, touchPreviewEnabled])
+
+  const closePreview = useCallback((previewKey) => {
+    clearPreviewTimer()
+    setActivePreviewKey((current) => (current === previewKey ? null : current))
+  }, [clearPreviewTimer])
+
+  const handleNavInteraction = useCallback((targetId, previewKey, hasPreview) => {
+    if (touchPreviewEnabled && hasPreview && activePreviewKey !== previewKey) {
+      setActivePreviewKey(previewKey)
+      return
+    }
+
+    clearPreviewTimer()
+    setActivePreviewKey(null)
+    scrollToSection(targetId)
+  }, [activePreviewKey, clearPreviewTimer, scrollToSection, touchPreviewEnabled])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined
+
+    const mediaQuery = window.matchMedia("(hover: none), (pointer: coarse)")
+    const updatePreviewMode = () => {
+      setTouchPreviewEnabled(mediaQuery.matches)
+    }
+
+    updatePreviewMode()
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", updatePreviewMode)
+      return () => {
+        mediaQuery.removeEventListener("change", updatePreviewMode)
+      }
+    }
+
+    mediaQuery.addListener(updatePreviewMode)
+
+    return () => {
+      mediaQuery.removeListener(updatePreviewMode)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !headerRef.current) return undefined
+
+    const rootStyle = document.documentElement.style
+    const stickyOffset = 16
+    const updateAnchorOffset = () => {
+      const headerHeight = headerRef.current?.offsetHeight ?? 0
+      rootStyle.setProperty("--landing-anchor-offset", `${headerHeight + stickyOffset}px`)
+    }
+
+    updateAnchorOffset()
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateAnchorOffset()
+    })
+
+    resizeObserver.observe(headerRef.current)
+    window.addEventListener("resize", updateAnchorOffset)
+
+    return () => {
+      resizeObserver.disconnect()
+      window.removeEventListener("resize", updateAnchorOffset)
+      rootStyle.removeProperty("--landing-anchor-offset")
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.location.hash) return
+
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${window.location.search}`
+    )
+  }, [])
+
+  useEffect(() => {
+    if (!activePreviewKey || typeof window === "undefined") return undefined
+
+    const dismissPreview = (event) => {
+      if (!(event.target instanceof Element) || !event.target.closest("[data-nav-preview-root='true']")) {
+        setActivePreviewKey(null)
+      }
+    }
+
+    const dismissOnEscape = (event) => {
+      if (event.key === "Escape") {
+        setActivePreviewKey(null)
+      }
+    }
+
+    window.addEventListener("pointerdown", dismissPreview)
+    window.addEventListener("keydown", dismissOnEscape)
+
+    return () => {
+      window.removeEventListener("pointerdown", dismissPreview)
+      window.removeEventListener("keydown", dismissOnEscape)
+    }
+  }, [activePreviewKey])
+
+  useEffect(() => () => {
+    clearPreviewTimer()
+  }, [clearPreviewTimer])
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#050816] text-white">
@@ -257,6 +716,7 @@ export default function Landing() {
 
       <div className="relative z-10 mx-auto max-w-7xl px-5 pb-16 pt-6 sm:px-6 lg:px-8">
         <motion.header
+          ref={headerRef}
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -275,9 +735,20 @@ export default function Landing() {
 
             <nav className="hidden items-center gap-6 lg:flex">
               {navItems.map((item) => (
-                <a key={item.label} href={item.href} className="text-sm text-slate-300 transition hover:text-white">
-                  {item.label}
-                </a>
+                <SectionNavButton
+                  key={item.label}
+                  label={item.label}
+                  targetId={item.targetId}
+                  previewKey={`header-${item.targetId}`}
+                  preview={navPreviewContent[item.targetId]}
+                  previewAlign={item.previewAlign}
+                  previewId={`header-preview-${item.targetId}`}
+                  isOpen={activePreviewKey === `header-${item.targetId}`}
+                  onOpenPreview={openPreview}
+                  onClosePreview={closePreview}
+                  onInteract={handleNavInteraction}
+                  className="text-sm text-slate-300 transition hover:text-white"
+                />
               ))}
             </nav>
 
@@ -299,23 +770,51 @@ export default function Landing() {
           </div>
         </motion.header>
 
-        <section className="grid gap-12 pb-14 pt-12 lg:grid-cols-[1.02fr,0.98fr] lg:items-center" id="about">
-          <motion.div initial="hidden" animate="visible" variants={sectionReveal}>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-100 shadow-[0_0_30px_rgba(34,211,238,0.15)]">
-              <Sparkles className="h-4 w-4" />
-              Fortune 500 disruption intelligence, reimagined
+        <section
+          className="landing-anchor-section grid gap-10 pb-12 pt-10 lg:min-h-[calc(100vh-7.5rem)] lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start lg:gap-12 xl:gap-16"
+          id="about"
+        >
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={sectionReveal}
+            className="flex min-w-0 flex-col gap-6 pt-2"
+          >
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-400/25 bg-cyan-400/10 px-4 py-1.5 text-sm text-cyan-100 shadow-[0_0_30px_rgba(34,211,238,0.15)]">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+              HCLTech-OpenAI Hackathon 2026
             </div>
 
-            <h1 className="mt-6 max-w-4xl text-5xl font-semibold leading-[0.95] tracking-[-0.04em] text-white md:text-7xl">
-              Predict Supply Chain Disruptions Before They Cost Millions
-            </h1>
+            <div className="max-w-3xl">
+              <h1 className="text-5xl font-semibold leading-[0.95] tracking-[-0.04em] text-white md:text-7xl">
+                Supply Chain Intelligence
+                <span className="mt-2 block bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400 bg-clip-text text-transparent">
+                  Powered by AI Agents
+                </span>
+              </h1>
 
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 md:text-xl">
-              An AI-powered multi-agent intelligence platform that monitors suppliers, analyzes global events,
-              forecasts risks, and recommends mitigation strategies in real time.
-            </p>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 md:text-xl">
+                ChainPulse monitors global suppliers, detects disruptions from live news and weather data, and recommends mitigation strategies in real time through an orchestrated AI command layer.
+              </p>
+            </div>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="grid gap-4 sm:grid-cols-3 sm:gap-6">
+              {[
+                { value: "7", label: "AI Agents" },
+                { value: "<20s", label: "Analysis Time" },
+                { value: "$1M+", label: "Revenue Protected" }
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-[24px] border border-white/10 bg-white/[0.05] px-4 py-4 shadow-[0_12px_40px_rgba(2,6,23,0.18)]"
+                >
+                  <p className="text-2xl font-semibold text-white">{stat.value}</p>
+                  <p className="mt-1 text-sm text-slate-400">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap gap-3">
               <Link
                 to={appHref}
                 className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(59,130,246,0.35)] transition hover:scale-[1.02]"
@@ -323,13 +822,14 @@ export default function Landing() {
                 Request Demo
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <a
-                href="#explainer"
+              <button
+                type="button"
+                onClick={() => scrollToSection("explainer")}
                 className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.11]"
               >
                 <Play className="h-4 w-4" />
                 Watch 60s Explainer
-              </a>
+              </button>
               <Link
                 to={chatHref}
                 className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-6 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/[0.08]"
@@ -339,7 +839,7 @@ export default function Landing() {
               </Link>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-slate-400">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
               <div className="inline-flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-emerald-300" />
                 Secure enterprise access
@@ -352,155 +852,9 @@ export default function Landing() {
             </div>
           </motion.div>
 
-          <motion.div initial="hidden" animate="visible" variants={sectionReveal} className="relative">
-            <GlassCard className="relative overflow-hidden p-4 md:p-5">
-              <div className="absolute inset-x-8 top-0 h-28 rounded-full bg-cyan-400/15 blur-3xl" />
-              <div className="grid gap-4 lg:grid-cols-[1.1fr,0.9fr]">
-                <div className="space-y-4">
-                  <GlassCard className="p-5">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="text-sm text-slate-400">Command Center</p>
-                        <h3 className="mt-2 text-2xl font-semibold">Global Risk Map</h3>
-                      </div>
-                      <div className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-300">
-                        Live
-                      </div>
-                    </div>
-
-                    <div className="mt-5 rounded-[24px] border border-white/10 bg-[#0b1229]/80 p-4">
-                      <div className="relative h-56 overflow-hidden rounded-[20px] bg-[radial-gradient(circle_at_25%_35%,_rgba(34,211,238,0.2),_transparent_18%),radial-gradient(circle_at_65%_55%,_rgba(168,85,247,0.2),_transparent_20%),linear-gradient(135deg,_rgba(15,23,42,0.85),_rgba(30,41,59,0.55))]">
-                        <div className="absolute inset-0 bg-[linear-gradient(90deg,_rgba(255,255,255,0.04)_1px,_transparent_1px),linear-gradient(0deg,_rgba(255,255,255,0.04)_1px,_transparent_1px)] bg-[size:32px_32px]" />
-                        {[
-                          "top-[26%] left-[22%] bg-emerald-400/70",
-                          "top-[48%] left-[62%] bg-rose-400/75",
-                          "top-[62%] left-[36%] bg-amber-300/70"
-                        ].map((item) => (
-                          <span key={item} className={`absolute h-4 w-4 rounded-full blur-[1px] ${item}`} />
-                        ))}
-                        <svg viewBox="0 0 420 200" className="absolute inset-0 h-full w-full opacity-80">
-                          <path d="M20 130 C80 120, 110 70, 160 88 S245 150, 300 96 S360 70, 400 102" fill="none" stroke="url(#pulseLine)" strokeWidth="4" strokeLinecap="round" />
-                          <defs>
-                            <linearGradient id="pulseLine" x1="0" y1="0" x2="1" y2="1">
-                              <stop offset="0%" stopColor="#22d3ee" />
-                              <stop offset="55%" stopColor="#3b82f6" />
-                              <stop offset="100%" stopColor="#a855f7" />
-                            </linearGradient>
-                          </defs>
-                        </svg>
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-3 gap-3">
-                        {[
-                          { label: "Active disruptions", value: "18" },
-                          { label: "Revenue at risk", value: "$4.8M" },
-                          { label: "Suppliers impacted", value: "27" }
-                        ].map((item) => (
-                          <div key={item.label} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-                            <p className="text-xs text-slate-400">{item.label}</p>
-                            <p className="mt-2 text-lg font-semibold text-white">{item.value}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </GlassCard>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <GlassCard className="p-5">
-                      <p className="text-sm text-slate-400">Revenue impact meter</p>
-                      <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          whileInView={{ width: "68%" }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 1.1, delay: 0.2 }}
-                          className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500"
-                        />
-                      </div>
-                      <p className="mt-4 text-3xl font-semibold">$12.6M</p>
-                      <p className="mt-2 text-sm text-slate-400">Modeled exposure if no mitigation actions are taken.</p>
-                    </GlassCard>
-
-                    <GlassCard className="p-5">
-                      <p className="text-sm text-slate-400">Multi-agent workflow</p>
-                      <div className="mt-4 flex items-center justify-between gap-2">
-                        {[Truck, Radar, Workflow, ShieldCheck].map((Icon, index) => (
-                          <div key={index} className="flex flex-1 items-center gap-2">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/6">
-                              <Icon className="h-5 w-5 text-cyan-200" />
-                            </div>
-                            {index < 3 ? <div className="h-px flex-1 bg-gradient-to-r from-cyan-400/60 to-violet-400/30" /> : null}
-                          </div>
-                        ))}
-                      </div>
-                      <p className="mt-4 text-sm text-slate-400">Supplier monitor → event intelligence → mitigation planner → stakeholder alerting</p>
-                    </GlassCard>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <GlassCard className="p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-slate-400">Risk heatmap</p>
-                        <p className="mt-2 text-xl font-semibold">Regional stress signals</p>
-                      </div>
-                      <LineChart className="h-5 w-5 text-violet-300" />
-                    </div>
-                    <div className="mt-5 grid grid-cols-4 gap-2">
-                      {Array.from({ length: 16 }).map((_, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0.4, scale: 0.94 }}
-                          whileInView={{ opacity: 1, scale: 1 }}
-                          viewport={{ once: true }}
-                          transition={{ delay: index * 0.03, duration: 0.35 }}
-                          className={`aspect-square rounded-2xl ${
-                            index % 5 === 0
-                              ? "bg-rose-400/55"
-                              : index % 3 === 0
-                                ? "bg-amber-300/45"
-                                : "bg-cyan-400/25"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </GlassCard>
-
-                  <GlassCard className="p-5">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400/30 to-violet-500/30">
-                        <Bot className="h-5 w-5 text-cyan-100" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-white">AI Copilot</p>
-                        <p className="text-sm text-slate-400">Decision-ready guidance</p>
-                      </div>
-                    </div>
-                    <div className="mt-5 space-y-3">
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-sm text-slate-200">
-                        Which suppliers are most exposed to Red Sea route delays this week?
-                      </div>
-                      <div className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.08] p-3 text-sm text-cyan-50">
-                        3 tier-1 suppliers show elevated risk. Recommended actions: reroute 2 shipments, pull forward inventory, and engage alternate source in Malaysia.
-                      </div>
-                    </div>
-                  </GlassCard>
-
-                  <GlassCard className="p-5">
-                    <p className="text-sm text-slate-400">Mitigation queue</p>
-                    <div className="mt-4 space-y-3">
-                      {["Activate alternate supplier", "Re-sequence inventory allocation", "Notify commercial leadership"].map((item) => (
-                        <div key={item} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-                          <span className="text-sm text-slate-200">{item}</span>
-                          <ArrowRight className="h-4 w-4 text-slate-500" />
-                        </div>
-                      ))}
-                    </div>
-                  </GlassCard>
-                </div>
-              </div>
-            </GlassCard>
+          <motion.div initial="hidden" animate="visible" variants={sectionReveal} className="relative min-w-0">
+            <div className="absolute inset-x-10 top-4 h-28 rounded-full bg-cyan-400/12 blur-3xl" />
+            <HeroDashboardMockup />
           </motion.div>
         </section>
 
@@ -557,7 +911,7 @@ export default function Landing() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
-          className="pb-14"
+          className="landing-anchor-section pb-14"
         >
           <GlassCard className="rounded-[32px] p-6 md:p-8">
             <div className="grid gap-6 md:grid-cols-5">
@@ -582,7 +936,7 @@ export default function Landing() {
           <SectionHeading
             eyebrow="Platform intelligence"
             title="An enterprise-grade control tower built for disruption response"
-            description="Every surface is designed to feel like a command system, not a generic marketing site — from multi-agent orchestration to board-ready financial visibility."
+            description="Every surface is designed to feel like a command system, not a generic marketing site â€” from multi-agent orchestration to board-ready financial visibility."
           />
 
           <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -625,8 +979,15 @@ export default function Landing() {
                   <p className="mt-4 text-sm leading-7 text-slate-300">{card.description}</p>
                   <div className="mt-6 h-32 rounded-[24px] border border-white/10 bg-[linear-gradient(135deg,_rgba(255,255,255,0.08),_rgba(255,255,255,0.02))] p-4">
                     <div className="flex h-full items-end gap-3">
-                      {[45, 70, 52, 82, 63].map((height) => (
-                        <span key={height} className="flex-1 rounded-t-2xl bg-gradient-to-t from-blue-500/20 to-cyan-300/55" style={{ height: `${height}%` }} />
+                      {[45, 70, 52, 82, 63].map((height, barIndex) => (
+                        <span
+                          key={`${card.title}-${height}-${barIndex}`}
+                          className="flex-1 rounded-t-2xl"
+                          style={{
+                            height: `${height}%`,
+                            background: showcaseBarGradients[barIndex % showcaseBarGradients.length]
+                          }}
+                        />
                       ))}
                     </div>
                   </div>
@@ -672,7 +1033,7 @@ export default function Landing() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
-          className="py-14"
+          className="landing-anchor-section py-14"
         >
           <SectionHeading
             eyebrow="Advanced capabilities"
@@ -712,7 +1073,7 @@ export default function Landing() {
             {testimonials.map((item, index) => (
               <motion.div key={item.name} custom={index} variants={cardReveal} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}>
                 <GlassCard className="h-full">
-                  <p className="text-base leading-8 text-slate-200">“{item.quote}”</p>
+                  <p className="text-base leading-8 text-slate-200">â€œ{item.quote}â€</p>
                   <div className="mt-8 flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400/20 to-violet-500/20 text-sm font-semibold text-white">
                       {item.name
@@ -723,7 +1084,7 @@ export default function Landing() {
                     <div>
                       <p className="font-semibold text-white">{item.name}</p>
                       <p className="text-sm text-slate-400">
-                        {item.title} · {item.company}
+                        {item.title} Â· {item.company}
                       </p>
                     </div>
                   </div>
@@ -739,7 +1100,7 @@ export default function Landing() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
-          className="py-14"
+          className="landing-anchor-section py-14"
         >
           <SectionHeading
             eyebrow="Pricing"
@@ -799,7 +1160,7 @@ export default function Landing() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
-          className="py-14"
+          className="landing-anchor-section py-14"
         >
           <SectionHeading
             eyebrow="Most asked questions"
@@ -846,7 +1207,7 @@ export default function Landing() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
-          className="py-14"
+          className="landing-anchor-section py-14"
         >
           <GlassCard className="relative overflow-hidden rounded-[36px] p-8 md:p-10">
             <div className="absolute right-0 top-0 h-48 w-48 rounded-full bg-violet-500/20 blur-3xl" />
@@ -879,11 +1240,7 @@ export default function Landing() {
               </div>
 
               <div className="grid gap-4">
-                {[
-                  { icon: Mail, label: "Email", value: "enterprise@chainpulse.ai" },
-                  { icon: Phone, label: "Phone", value: "+1 (555) 014-2026" },
-                  { icon: Globe2, label: "Coverage", value: "Global supplier and logistics networks" }
-                ].map((item) => (
+                {contactMethods.map((item) => (
                   <div key={item.label} className="rounded-[28px] border border-white/10 bg-white/[0.05] p-5">
                     <div className="flex items-center gap-4">
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400/20 to-violet-500/20">
@@ -910,9 +1267,20 @@ export default function Landing() {
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
               {navItems.map((item) => (
-                <a key={item.label} href={item.href} className="transition hover:text-white">
-                  {item.label}
-                </a>
+                <SectionNavButton
+                  key={item.label}
+                  label={item.label}
+                  targetId={item.targetId}
+                  previewKey={`footer-${item.targetId}`}
+                  preview={navPreviewContent[item.targetId]}
+                  previewAlign={item.previewAlign}
+                  previewId={`footer-preview-${item.targetId}`}
+                  isOpen={activePreviewKey === `footer-${item.targetId}`}
+                  onOpenPreview={openPreview}
+                  onClosePreview={closePreview}
+                  onInteract={handleNavInteraction}
+                  className="transition hover:text-white"
+                />
               ))}
             </div>
           </div>

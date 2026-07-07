@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from app.data.service import DataService
 
 
@@ -7,7 +9,13 @@ class FallbackCopilotService:
     def __init__(self, data_service: DataService):
         self.data_service = data_service
 
-    def respond(self, message: str) -> str:
+    def respond(self, message: str, *, include_context: bool = True, context_snapshot: dict | None = None) -> str:
+        if not include_context:
+            return (
+                "Live data context is turned off, so I can only give a general answer. Re-enable live data to ground "
+                "responses in current suppliers, shipments, and disruptions."
+            )
+
         normalized = message.lower()
 
         if any(keyword in normalized for keyword in ("highest risk", "riskiest", "top risk supplier", "supplier is highest risk")):
@@ -24,7 +32,18 @@ class FallbackCopilotService:
             return self._supplier_failure_response(message)
         if any(keyword in normalized for keyword in ("summary", "summarize", "overview", "status")):
             return self._overview_response()
-        return self._generic_response()
+        return self._generic_response(context_snapshot)
+
+    def stream_response(
+        self,
+        message: str,
+        *,
+        include_context: bool = True,
+        context_snapshot: dict | None = None,
+        chunk_words: int = 3,
+    ) -> list[str]:
+        response = self.respond(message, include_context=include_context, context_snapshot=context_snapshot)
+        return self._chunk_text(response, chunk_words=chunk_words)
 
     def _highest_risk_supplier_response(self) -> str:
         suppliers = sorted(self.data_service.get_suppliers(), key=lambda supplier: supplier.risk_score, reverse=True)
@@ -132,7 +151,23 @@ class FallbackCopilotService:
             "If you want, ask about delayed shipments, financial impact, carbon footprint, or a supplier failure simulation."
         )
 
-    def _generic_response(self) -> str:
+    def _generic_response(self, context_snapshot: dict | None = None) -> str:
+        if context_snapshot:
+            summary = context_snapshot.get("summary", {})
+            highlights = context_snapshot.get("highlights", {})
+            supplier_names = highlights.get("top_supplier_names") or []
+            disruption_labels = highlights.get("top_disruption_labels") or []
+            supplier_text = ", ".join(supplier_names) if supplier_names else "no supplier names loaded"
+            disruption_text = ", ".join(disruption_labels) if disruption_labels else "no active disruption labels loaded"
+            return (
+                "Copilot is running in local fallback mode, but it is grounded in the live ChainPulse dataset. "
+                f"I currently see {summary.get('at_risk_suppliers', 0)} at-risk suppliers, "
+                f"{summary.get('active_disruptions', 0)} active disruptions, and "
+                f"${summary.get('revenue_at_risk_usd', 0):,.0f} in revenue at risk. "
+                f"Top suppliers in the prompt context are {supplier_text}, and leading disruptions are {disruption_text}. "
+                "Ask for a ranking, impact summary, mitigation plan, or a supplier email draft and I will use those records directly."
+            )
+
         alerts = self.data_service.get_anomalies()[:3]
         alert_text = "; ".join(alert["title"] for alert in alerts) if alerts else "no major anomalies detected"
         return (
@@ -149,3 +184,23 @@ class FallbackCopilotService:
             if supplier.name.lower() in normalized or supplier.supplier_id.lower() in normalized:
                 return supplier
         return max(suppliers, key=lambda supplier: supplier.risk_score)
+
+    @staticmethod
+    def _chunk_text(text: str, *, chunk_words: int = 3) -> list[str]:
+        tokens = re.findall(r"\S+\s*|\s+", text)
+        chunks: list[str] = []
+        current = ""
+        words = 0
+
+        for token in tokens:
+            current += token
+            if token.strip():
+                words += 1
+            if words >= chunk_words or token.endswith(("\n", ".", "!", "?", ":")):
+                chunks.append(current)
+                current = ""
+                words = 0
+
+        if current:
+            chunks.append(current)
+        return chunks or [text]

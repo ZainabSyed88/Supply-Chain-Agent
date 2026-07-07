@@ -13,7 +13,7 @@ import {
   Truck,
   Zap
 } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
 
 const SCENES = [
@@ -147,8 +147,8 @@ function Scene1() {
   ]
 
   return (
-    <div className="flex min-h-[520px] items-center justify-center px-4 pb-44 pt-8 md:px-10">
-      <svg viewBox="0 0 820 420" className="w-full max-w-4xl">
+    <div className="flex h-full items-center justify-center px-4 py-4 sm:py-5 md:px-8">
+      <svg viewBox="0 0 820 420" className="h-full w-full max-w-4xl">
         <rect width="820" height="420" fill="transparent" />
         <ellipse cx="188" cy="210" rx="96" ry="126" fill="#122033" stroke="#2a3b51" strokeWidth="2" />
         <ellipse cx="408" cy="208" rx="70" ry="136" fill="#122033" stroke="#2a3b51" strokeWidth="2" />
@@ -227,28 +227,28 @@ function Scene2() {
   ]
 
   return (
-    <div className="grid min-h-[520px] items-center gap-10 px-6 pb-44 pt-10 md:grid-cols-[0.95fr,1.05fr] md:px-10">
+    <div className="grid h-full items-center gap-6 px-5 py-5 md:grid-cols-[0.95fr,1.05fr] md:px-8">
       <div className="relative mx-auto flex max-w-sm flex-col items-center text-center" style={{ animation: "demoScaleIn 0.5s both" }}>
         <div className="absolute inset-0 rounded-full bg-cyan-400/20 blur-3xl" />
         <div
-          className="relative flex h-28 w-28 items-center justify-center rounded-[32px] border border-cyan-300/20 bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_24px_60px_rgba(59,130,246,0.35)]"
+          className="relative flex h-20 w-20 items-center justify-center rounded-[28px] border border-cyan-300/20 bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_20px_50px_rgba(59,130,246,0.35)] sm:h-24 sm:w-24"
           style={{ animation: "demoGlow 2.2s infinite" }}
         >
-          <Zap className="h-10 w-10 text-white" />
+          <Zap className="h-8 w-8 text-white sm:h-9 sm:w-9" />
         </div>
-        <div className="relative mt-6 flex items-center gap-3 rounded-full border border-white/12 bg-white/[0.06] px-4 py-2 text-sm text-cyan-100">
+        <div className="relative mt-4 flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs text-cyan-100 sm:mt-5 sm:px-4 sm:py-2 sm:text-sm">
           <BrainCircuit className="h-4 w-4" />
           AI detection engine online
         </div>
-        <h4 className="relative mt-4 text-3xl font-semibold text-white">ChainPulse</h4>
-        <p className="relative mt-2 max-w-xs text-sm leading-7 text-slate-300">Signals converge from news, weather, carriers, and suppliers in seconds.</p>
+        <h4 className="relative mt-3 text-2xl font-semibold text-white sm:mt-4 sm:text-3xl">ChainPulse</h4>
+        <p className="relative mt-2 max-w-xs text-sm leading-6 text-slate-300">Signals converge from news, weather, carriers, and suppliers in seconds.</p>
       </div>
 
-      <div className="mx-auto w-full max-w-xl space-y-3">
+      <div className="mx-auto w-full max-w-xl space-y-2.5 sm:space-y-3">
         {alerts.map((alert) => (
           <div
             key={alert.text}
-            className="flex items-center gap-4 rounded-[22px] border border-white/10 bg-slate-900/70 px-4 py-4 shadow-[0_12px_40px_rgba(0,0,0,0.25)]"
+            className="flex items-center gap-3 rounded-[22px] border border-white/10 bg-slate-900/70 px-3 py-3.5 shadow-[0_12px_40px_rgba(0,0,0,0.25)] sm:px-4"
             style={{ animation: `demoSlideRight 0.45s ${alert.delay} both` }}
           >
             <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] ${alert.color}`}>
@@ -276,8 +276,8 @@ function Scene3({ progress }) {
   const cy = 208
 
   return (
-    <div className="flex min-h-[520px] items-center justify-center px-4 pb-44 pt-8 md:px-10">
-      <svg viewBox="0 0 800 430" className="w-full max-w-4xl">
+    <div className="flex h-full items-center justify-center px-4 py-4 sm:py-5 md:px-8">
+      <svg viewBox="0 0 800 430" className="h-full w-full max-w-4xl">
         <defs>
           <radialGradient id="agentHub" cx="50%" cy="50%" r="60%">
             <stop offset="0%" stopColor="#2563eb" stopOpacity="0.95" />
@@ -369,12 +369,12 @@ function Scene4({ countUp, progress }) {
   ]
 
   return (
-    <div className="min-h-[520px] px-6 pb-44 pt-10 md:px-10">
-      <div className="grid gap-4 md:grid-cols-4">
+    <div className="flex h-full flex-col justify-center px-5 py-5 md:px-8">
+      <div className="grid gap-3 md:grid-cols-4">
         {kpis.map((kpi, index) => (
           <div
             key={kpi.label}
-            className="rounded-[24px] border border-white/10 bg-slate-900/70 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.22)]"
+            className="rounded-[24px] border border-white/10 bg-slate-900/70 p-3.5 shadow-[0_16px_40px_rgba(0,0,0,0.22)]"
             style={{ animation: `demoFadeUp 0.45s ${index * 0.08}s both` }}
           >
             <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05] ${kpi.color}`}>
@@ -387,7 +387,7 @@ function Scene4({ countUp, progress }) {
       </div>
 
       <div
-        className="relative mt-5 overflow-hidden rounded-[30px] border border-white/10 bg-slate-900/70 p-5 shadow-[0_22px_50px_rgba(0,0,0,0.24)]"
+        className="relative mt-4 overflow-hidden rounded-[30px] border border-white/10 bg-slate-900/70 p-4 shadow-[0_22px_50px_rgba(0,0,0,0.24)] sm:p-5"
         style={{ animation: "demoFadeUp 0.5s 0.25s both" }}
       >
         <div className="absolute inset-0 bg-[linear-gradient(90deg,_rgba(255,255,255,0.03)_1px,_transparent_1px),linear-gradient(0deg,_rgba(255,255,255,0.03)_1px,_transparent_1px)] bg-[size:32px_32px] opacity-35" />
@@ -399,7 +399,7 @@ function Scene4({ countUp, progress }) {
           <div className="rounded-full border border-cyan-400/15 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">Live model</div>
         </div>
 
-        <svg viewBox="0 0 640 190" className="relative mt-6 w-full">
+        <svg viewBox="0 0 640 190" className="relative mt-4 w-full sm:mt-6">
           <defs>
             <linearGradient id="demoLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#38bdf8" />
@@ -421,7 +421,7 @@ function Scene4({ countUp, progress }) {
         </svg>
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-4 space-y-2.5 sm:space-y-3">
         {actions.map((action, index) => (
           <div
             key={action.text}
@@ -447,7 +447,7 @@ function Scene5({ ctaHref }) {
   ]
 
   return (
-    <div className="relative flex min-h-[520px] items-center justify-center overflow-hidden px-6 pb-44 pt-8 md:px-10">
+    <div className="relative flex h-full items-center justify-center overflow-hidden px-5 py-4 sm:py-5 md:px-8">
       <svg viewBox="0 0 840 430" className="absolute inset-0 h-full w-full opacity-85">
         <ellipse cx="194" cy="215" rx="100" ry="130" fill="#102030" stroke="#21445f" strokeWidth="2" />
         <ellipse cx="420" cy="208" rx="74" ry="136" fill="#102030" stroke="#21445f" strokeWidth="2" />
@@ -492,20 +492,25 @@ function Scene5({ ctaHref }) {
         ))}
       </svg>
 
-      <div className="relative z-10 mx-auto max-w-2xl text-center" style={{ animation: "demoScaleIn 0.6s both" }}>
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-[28px] border border-cyan-300/20 bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_20px_55px_rgba(59,130,246,0.35)]">
-          <ShieldCheck className="h-9 w-9 text-white" />
+      <div className="relative z-10 mx-auto max-w-xl text-center" style={{ animation: "demoScaleIn 0.6s both" }}>
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[24px] border border-cyan-300/20 bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_18px_46px_rgba(59,130,246,0.35)] sm:h-[4.5rem] sm:w-[4.5rem]">
+          <ShieldCheck className="h-7 w-7 text-white sm:h-8 sm:w-8" />
         </div>
-        <h4 className="mt-6 text-4xl font-semibold text-white md:text-5xl">Supply Chain Protected</h4>
-        <div className="mt-4 text-4xl font-semibold text-emerald-300 md:text-5xl" style={{ animation: "demoSoftPulse 1.2s infinite" }}>
+        <h4 className="mt-4 text-[clamp(2rem,4.6vw,3.1rem)] font-semibold leading-tight text-white">
+          Supply Chain Protected
+        </h4>
+        <div
+          className="mt-3 text-[clamp(1.9rem,4.2vw,3rem)] font-semibold leading-tight text-emerald-300"
+          style={{ animation: "demoSoftPulse 1.2s infinite" }}
+        >
           +$847,000 protected
         </div>
-        <p className="mx-auto mt-4 max-w-xl text-base leading-8 text-slate-300 md:text-lg">
+        <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-300 sm:text-base sm:leading-7 md:text-lg">
           ChainPulse detected 12 disruptions, coordinated AI agent analysis, and recommended actions that preserved revenue before the impact hit your network.
         </p>
         <Link
           to={ctaHref}
-          className="mt-8 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(59,130,246,0.35)]"
+          className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(59,130,246,0.35)] sm:mt-6 sm:px-6 sm:py-3"
           style={{ animation: "demoSoftPulse 2s infinite" }}
         >
           Open Dashboard
@@ -521,13 +526,30 @@ export default function ProductDemo({ ctaHref = "/dashboard" }) {
   const [progress, setProgress] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
   const [countUp, setCountUp] = useState(0)
+  const [isInView, setIsInView] = useState(true)
+  const containerRef = useRef(null)
 
   useEffect(() => {
-    if (!isPlaying) return undefined
+    if (typeof window === "undefined" || !containerRef.current) return undefined
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting)
+      },
+      { threshold: 0.35 }
+    )
+
+    observer.observe(containerRef.current)
+
+    return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!isPlaying || !isInView) return undefined
 
     const scene = SCENES[currentScene]
     let elapsed = 0
-    const tick = 50
+    const tick = 80
 
     const intervalId = window.setInterval(() => {
       elapsed += tick
@@ -546,10 +568,10 @@ export default function ProductDemo({ ctaHref = "/dashboard" }) {
     }, tick)
 
     return () => window.clearInterval(intervalId)
-  }, [currentScene, isPlaying])
+  }, [currentScene, isInView, isPlaying])
 
   useEffect(() => {
-    if (currentScene !== 3) {
+    if (currentScene !== 3 || !isInView) {
       setCountUp(0)
       return undefined
     }
@@ -566,10 +588,10 @@ export default function ProductDemo({ ctaHref = "/dashboard" }) {
       if (value >= target) {
         window.clearInterval(timer)
       }
-    }, 45)
+    }, 60)
 
     return () => window.clearInterval(timer)
-  }, [currentScene])
+  }, [currentScene, isInView])
 
   const scene = SCENES[currentScene]
 
@@ -589,13 +611,16 @@ export default function ProductDemo({ ctaHref = "/dashboard" }) {
   }
 
   return (
-    <div className="relative overflow-hidden rounded-[36px] border border-white/12 bg-slate-950 shadow-[0_32px_90px_rgba(0,0,0,0.35)]">
+    <div
+      ref={containerRef}
+      className="relative flex min-h-[40rem] flex-col overflow-hidden rounded-[36px] border border-white/12 bg-slate-950 shadow-[0_32px_90px_rgba(0,0,0,0.35)] lg:min-h-[46rem]"
+    >
       <ProductDemoStyles />
       <div className={`absolute inset-0 bg-gradient-to-br ${scene.themeClass}`} />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,_rgba(255,255,255,0.03)_1px,_transparent_1px),linear-gradient(0deg,_rgba(255,255,255,0.03)_1px,_transparent_1px)] bg-[size:38px_38px] opacity-35" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.14),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(168,85,247,0.12),_transparent_24%)]" />
 
-      <div key={scene.id} className="relative">
+      <div key={scene.id} className="relative min-h-0 flex-1">
         {currentScene === 0 ? <Scene1 /> : null}
         {currentScene === 1 ? <Scene2 /> : null}
         {currentScene === 2 ? <Scene3 progress={progress} /> : null}
@@ -603,7 +628,7 @@ export default function ProductDemo({ ctaHref = "/dashboard" }) {
         {currentScene === 4 ? <Scene5 ctaHref={ctaHref} /> : null}
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-gradient-to-t from-black/90 via-black/70 to-transparent px-5 py-5 backdrop-blur-[14px] md:px-6">
+      <div className="relative border-t border-white/10 bg-gradient-to-t from-black/90 via-black/75 to-black/55 px-4 py-3 backdrop-blur-[14px] md:px-5">
         <div className="h-1 overflow-hidden rounded-full bg-white/10">
           <div
             className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500"
@@ -611,7 +636,7 @@ export default function ProductDemo({ ctaHref = "/dashboard" }) {
           />
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           {SCENES.map((item, index) => (
             <button
               key={item.id}
@@ -628,17 +653,17 @@ export default function ProductDemo({ ctaHref = "/dashboard" }) {
           </div>
         </div>
 
-        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div className="mt-3 flex flex-col gap-2.5 md:flex-row md:items-end md:justify-between">
           <div>
-            <h3 className="text-2xl font-semibold text-white md:text-3xl">{scene.title}</h3>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-300 md:text-base">{scene.subtitle}</p>
+            <h3 className="text-xl font-semibold text-white md:text-2xl">{scene.title}</h3>
+            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-300 md:text-base">{scene.subtitle}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-sm">
+          <div className="flex flex-wrap items-center gap-2.5 text-sm">
             <button
               type="button"
               onClick={() => setIsPlaying((value) => !value)}
-              className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-4 py-2 text-slate-100 transition hover:bg-white/[0.12]"
+              className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3.5 py-2 text-slate-100 transition hover:bg-white/[0.12]"
             >
               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               {isPlaying ? "Pause" : "Play"}
@@ -646,14 +671,14 @@ export default function ProductDemo({ ctaHref = "/dashboard" }) {
             <button
               type="button"
               onClick={goToPrevious}
-              className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+              className="rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
             >
               Prev
             </button>
             <button
               type="button"
               onClick={goToNext}
-              className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+              className="rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
             >
               Next
             </button>

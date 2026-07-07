@@ -87,6 +87,8 @@ def generate_shipments(suppliers: list[Supplier], count: int = 30) -> list[Shipm
             + ["delivered"] * 8
             + ["at_risk"] * 6
         )
+        if status == "delayed" and delay_days == 0:
+            delay_days = random.choice([1, 2, 3, 5, 7])
         if status == "delivered":
             actual_delivery = eta - timedelta(days=random.randint(0, 3))
         elif status == "delayed":

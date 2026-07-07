@@ -4,6 +4,10 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --landing-anchor-offset: 7.5rem;
+}
+
 @layer base {
   html,
   body,
@@ -25,15 +29,12 @@
 
   html {
     @apply font-sans;
+    scroll-behavior: smooth;
   }
 
   body {
     @apply bg-slate-50 text-slate-900 font-sans antialiased;
   }
-}
-
-html {
-  scroll-behavior: smooth;
 }
 
 #root {
@@ -60,15 +61,18 @@ html {
     linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
   background-size: 72px 72px;
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.95));
+  transform: translateZ(0);
 }
 
 .landing-orb {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(90px);
-  opacity: 0.24;
+  filter: blur(72px);
+  opacity: 0.2;
   pointer-events: none;
-  animation: float-orb 16s ease-in-out infinite;
+  animation: float-orb 22s ease-in-out infinite;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 .landing-orb-cyan {
@@ -138,11 +142,6 @@ html {
   background: white !important;
 }
 
-.map-container {
-  height: calc(100vh - 160px) !important;
-  min-height: 600px;
-}
-
 .leaflet-container {
   height: 100% !important;
   border-radius: 0 0 12px 12px;
@@ -169,8 +168,13 @@ html {
   }
 }
 
-section[id] {
-  scroll-margin-top: 110px;
+.landing-anchor-section {
+  scroll-margin-top: var(--landing-anchor-offset);
+}
+
+.landing-progress-track {
+  width: 100%;
+  min-width: 100%;
 }
 
 @keyframes fadeIn {

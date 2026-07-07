@@ -8,7 +8,8 @@ import EmptyState from "../components/ui/EmptyState"
 import Spinner from "../components/ui/Spinner"
 import { useApi } from "../hooks/useApi"
 import { api } from "../utils/api"
-import { formatCurrency, formatDate, formatRelativeTime, formatPercent, statusLabel } from "../utils/formatters"
+import { getSupplierRiskThresholds } from "../utils/riskThresholds"
+import { formatCurrency, formatDate, formatRelativeTime, formatPercent, getShipmentDelayDays, statusLabel } from "../utils/formatters"
 
 const routeColors = {
   in_transit: "#3b82f6",
@@ -24,16 +25,16 @@ const disruptionColors = {
   low: "#10b981"
 }
 
-function getRiskColor(score) {
-  if (score > 75) return "#ef4444"
-  if (score > 50) return "#f59e0b"
-  if (score > 30) return "#eab308"
+function getRiskColor(score, thresholds) {
+  if (score >= thresholds.critical) return "#ef4444"
+  if (score >= thresholds.atRisk) return "#f59e0b"
+  if (score >= Math.max(10, thresholds.atRisk - 3)) return "#eab308"
   return "#10b981"
 }
 
-function createSupplierIcon(score) {
-  const color = getRiskColor(score)
-  const symbol = score > 75 ? "!" : score > 50 ? "~" : "OK"
+function createSupplierIcon(score, thresholds) {
+  const color = getRiskColor(score, thresholds)
+  const symbol = score >= thresholds.critical ? "!" : score >= thresholds.atRisk ? "~" : "OK"
 
   return L.divIcon({
     html: `
@@ -96,9 +97,9 @@ function createDisruptionIcon(severity, type) {
   })
 }
 
-function getFilteredSuppliers(filter, suppliers) {
-  if (filter === "at_risk") return suppliers.filter((supplier) => supplier.risk_score > 65)
-  if (filter === "critical") return suppliers.filter((supplier) => supplier.risk_score > 80)
+function getFilteredSuppliers(filter, suppliers, thresholds) {
+  if (filter === "at_risk") return suppliers.filter((supplier) => supplier.risk_score >= thresholds.atRisk)
+  if (filter === "critical") return suppliers.filter((supplier) => supplier.risk_score >= thresholds.critical)
   return suppliers
 }
 
@@ -107,13 +108,31 @@ function MapBridge({ onReady }) {
 
   useEffect(() => {
     onReady(map)
+
+    const refreshSize = () => {
+      map.invalidateSize(false)
+    }
+
+    const frameId = window.requestAnimationFrame(refreshSize)
+    const timeoutId = window.setTimeout(refreshSize, 180)
+    const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(refreshSize) : null
+
+    observer?.observe(map.getContainer())
+    window.addEventListener("resize", refreshSize)
+
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      window.clearTimeout(timeoutId)
+      observer?.disconnect()
+      window.removeEventListener("resize", refreshSize)
+    }
   }, [map, onReady])
 
   return null
 }
 
-function SupplierPopup({ supplier, navigate }) {
-  const riskColor = getRiskColor(supplier.risk_score)
+function SupplierPopup({ supplier, navigate, thresholds }) {
+  const riskColor = getRiskColor(supplier.risk_score, thresholds)
 
   return (
     <div style={{ fontFamily: "Inter, sans-serif", padding: "4px" }}>
@@ -227,6 +246,7 @@ function SupplierPopup({ supplier, navigate }) {
 
 function CurvedRoute({ shipment, onSelect, layerRef }) {
   const color = routeColors[shipment.status] || routeColors.in_transit
+  const delayDays = getShipmentDelayDays(shipment)
   const midpoint = [
     (shipment.origin_coordinates.lat + shipment.destination_coordinates.lat) / 2
       + (shipment.origin_coordinates.lat > shipment.destination_coordinates.lat ? 6 : -6),
@@ -275,9 +295,9 @@ function CurvedRoute({ shipment, onSelect, layerRef }) {
           </div>
           <div style={{ fontSize: "12px", color: "#475569" }}>Value: {formatCurrency(shipment.value_usd)}</div>
           <div style={{ fontSize: "12px", color: "#475569" }}>ETA: {formatDate(shipment.eta)}</div>
-          {shipment.delay_days > 0 ? (
+          {delayDays > 0 ? (
             <div style={{ fontSize: "12px", color: "#ef4444", fontWeight: 600, marginTop: "4px" }}>
-              Delayed by {shipment.delay_days} days
+              Delayed by {delayDays} days
             </div>
           ) : null}
         </div>
@@ -472,12 +492,14 @@ export default function SupplyChainMap() {
     const suppliers = data?.suppliers || []
     const shipments = data?.shipments || []
     const disruptions = data?.disruptions || []
+    const riskThresholds = getSupplierRiskThresholds(suppliers)
 
     return {
       suppliers,
       disruptions,
       shipments,
-      filteredSuppliers: getFilteredSuppliers(filter, suppliers),
+      riskThresholds,
+      filteredSuppliers: getFilteredSuppliers(filter, suppliers, riskThresholds),
       delayedCount: shipments.filter((shipment) => shipment.status === "delayed").length
     }
   }, [data, filter])
@@ -539,10 +561,9 @@ export default function SupplyChainMap() {
 
   return (
     <div
-      className="flex h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card"
-      style={{ height: "calc(100vh - 120px)" }}
+      className="flex min-h-[calc(100dvh-12rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card xl:h-[calc(100dvh-12rem)] xl:flex-row"
     >
-      <div className="flex w-80 shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white">
+      <div className="flex shrink-0 flex-col overflow-hidden border-b border-slate-200 bg-white xl:w-80 xl:border-b-0 xl:border-r">
         <div className="border-b border-slate-100 p-4">
           <div className="grid grid-cols-2 gap-2">
             <StatPill icon={Building2} label="Suppliers" value={model.suppliers.length} tone="blue" />
@@ -605,7 +626,7 @@ export default function SupplyChainMap() {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex flex-wrap items-center gap-3 border-b border-slate-200 bg-white px-4 py-3">
           <span className="flex items-center gap-1 text-sm text-slate-500">
             <Layers3 className="h-4 w-4" />
@@ -691,8 +712,8 @@ export default function SupplyChainMap() {
           </div>
         </div>
 
-        <div className="map-container flex-1">
-          <MapContainer center={[25, 30]} zoom={3} className="h-full w-full">
+        <div className="relative h-[28rem] bg-slate-100 xl:h-auto xl:min-h-0 xl:flex-1 xl:basis-0">
+          <MapContainer center={[25, 30]} zoom={3} scrollWheelZoom={false} className="h-full w-full">
             <MapBridge onReady={setMapInstance} />
             <TileLayer
               url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
@@ -710,13 +731,13 @@ export default function SupplyChainMap() {
                     else delete supplierRefs.current[supplier.supplier_id]
                   }}
                   position={[supplier.coordinates.lat, supplier.coordinates.lng]}
-                  icon={createSupplierIcon(supplier.risk_score)}
+                  icon={createSupplierIcon(supplier.risk_score, model.riskThresholds)}
                   eventHandlers={{
                     click: () => focusSupplier(supplier)
                   }}
                 >
                   <Popup maxWidth={280} className="supplier-popup">
-                    <SupplierPopup supplier={supplier} navigate={navigate} />
+                    <SupplierPopup supplier={supplier} navigate={navigate} thresholds={model.riskThresholds} />
                   </Popup>
                 </Marker>
               ))}

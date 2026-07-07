@@ -5,11 +5,12 @@ import { useLocation, useNavigate } from "react-router-dom"
 import DataTable from "../components/shared/DataTable"
 import Badge from "../components/ui/Badge"
 import EmptyState from "../components/ui/EmptyState"
+import KPICard from "../components/ui/KPICard"
 import Modal from "../components/ui/Modal"
 import Spinner from "../components/ui/Spinner"
 import { useApi } from "../hooks/useApi"
 import { api } from "../utils/api"
-import { formatCurrency, formatDate, statusLabel } from "../utils/formatters"
+import { formatCurrency, formatDate, getShipmentDelayDays, statusLabel } from "../utils/formatters"
 
 const countryCoordinates = {
   China: [35.8617, 104.1954],
@@ -60,7 +61,7 @@ export default function Shipments() {
       try {
         setAnalysisLoading(true)
         const response = await api.chat(
-          `Assess the risk of shipment ${selectedShipment.shipment_id} from ${selectedShipment.origin} to ${selectedShipment.destination}, status ${selectedShipment.status}, delay ${selectedShipment.delay_days}.`
+          `Assess the risk of shipment ${selectedShipment.shipment_id} from ${selectedShipment.origin} to ${selectedShipment.destination}, status ${selectedShipment.status}, delay ${getShipmentDelayDays(selectedShipment)}.`
         )
         if (!cancelled) setAnalysis(response.response)
       } catch {
@@ -68,7 +69,7 @@ export default function Shipments() {
           setAnalysis(
             `${selectedShipment.shipment_id} is ${
               selectedShipment.status === "delayed" || selectedShipment.status === "at_risk" ? "experiencing elevated execution risk" : "currently stable"
-            }. Monitor carrier updates closely and prepare a lane contingency if delay extends beyond ${Math.max(2, selectedShipment.delay_days + 1)} days.`
+            }. Monitor carrier updates closely and prepare a lane contingency if delay extends beyond ${Math.max(2, getShipmentDelayDays(selectedShipment) + 1)} days.`
           )
         }
       } finally {
@@ -146,11 +147,14 @@ export default function Shipments() {
     {
       key: "delay_days",
       label: "Delay",
-      render: (shipment) => (
-        <span className={shipment.delay_days > 0 ? "text-red-600" : "text-emerald-600"}>
-          {shipment.delay_days > 0 ? `+${shipment.delay_days} days` : "On Time"}
-        </span>
-      )
+      render: (shipment) => {
+        const delayDays = getShipmentDelayDays(shipment)
+        return (
+          <span className={delayDays > 0 ? "text-red-600" : "text-emerald-600"}>
+            {delayDays > 0 ? `+${delayDays} days` : "On Time"}
+          </span>
+        )
+      }
     },
     {
       key: "actions",
@@ -171,6 +175,62 @@ export default function Shipments() {
 
   const impactingDisruptions =
     model?.disruptions.filter((disruption) => disruption.affected_shipment_ids.includes(selectedShipment?.shipment_id)) || []
+
+  const summaryCards = [
+    {
+      title: "Total",
+      value: model?.stats.total ?? 0,
+      subtitle: "Tracked shipments in current scope",
+      icon: Package,
+      color: "bg-sky-100 text-sky-700",
+      cardClassName: "border-sky-200 bg-gradient-to-br from-sky-50 via-white to-white",
+      valueClassName: "text-sky-950"
+    },
+    {
+      title: "In Transit",
+      value: model?.stats.in_transit ?? 0,
+      subtitle: "Loads currently moving across lanes",
+      icon: Truck,
+      color: "bg-blue-100 text-blue-700",
+      cardClassName: "border-blue-200 bg-gradient-to-br from-blue-50 via-white to-white",
+      valueClassName: "text-blue-950"
+    },
+    {
+      title: "Delayed",
+      value: model?.stats.delayed ?? 0,
+      subtitle: "Shipments requiring escalation",
+      icon: AlertTriangle,
+      color: "bg-rose-100 text-rose-700",
+      cardClassName: "border-rose-200 bg-gradient-to-br from-rose-50 via-white to-white",
+      valueClassName: "text-rose-950"
+    },
+    {
+      title: "Delivered",
+      value: model?.stats.delivered ?? 0,
+      subtitle: "Completed deliveries in this view",
+      icon: CircleDot,
+      color: "bg-emerald-100 text-emerald-700",
+      cardClassName: "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white",
+      valueClassName: "text-emerald-950"
+    },
+    {
+      title: "At Risk",
+      value: model?.stats.at_risk ?? 0,
+      subtitle: "Shipments with elevated disruption exposure",
+      icon: MapPinned,
+      color: "bg-amber-100 text-amber-700",
+      cardClassName: "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white",
+      valueClassName: "text-amber-950"
+    }
+  ]
+
+  const filterStyles = {
+    "": "bg-blue-600 text-white shadow-sm shadow-blue-200",
+    in_transit: "bg-blue-600 text-white shadow-sm shadow-blue-200",
+    delayed: "bg-rose-600 text-white shadow-sm shadow-rose-200",
+    delivered: "bg-emerald-600 text-white shadow-sm shadow-emerald-200",
+    at_risk: "bg-amber-500 text-white shadow-sm shadow-amber-200"
+  }
 
   return (
     <div className="space-y-6">
@@ -195,22 +255,11 @@ export default function Shipments() {
 
       <section className="grid gap-4 md:grid-cols-5">
         {model
-          ? [
-              ["Total", model.stats.total],
-              ["In Transit", model.stats.in_transit],
-              ["Delayed", model.stats.delayed],
-              ["Delivered", model.stats.delivered],
-              ["At Risk", model.stats.at_risk]
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-lg border bg-white p-4 shadow-card">
-                <p className="text-sm text-slate-500">{label}</p>
-                <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
-              </div>
-            ))
+          ? summaryCards.map((card) => <KPICard key={card.title} {...card} />)
           : Array.from({ length: 5 }, (_, index) => <div key={index} className="h-24 animate-pulse rounded-lg border bg-white" />)}
       </section>
 
-      <section className="rounded-lg border bg-white p-5 shadow-card">
+      <section className="rounded-lg border border-slate-200 bg-gradient-to-r from-white via-slate-50 to-blue-50/60 p-5 shadow-card">
         <div className="flex flex-wrap gap-2">
           {[
             ["", "All"],
@@ -223,8 +272,8 @@ export default function Shipments() {
               key={label}
               type="button"
               onClick={() => setStatusFilter(value)}
-              className={`rounded-full px-4 py-2 text-sm font-medium ${
-                statusFilter === value ? "bg-primary text-white" : "bg-slate-100 text-slate-600"
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                statusFilter === value ? filterStyles[value] : "bg-white text-slate-600 shadow-sm ring-1 ring-slate-200 hover:bg-slate-50"
               }`}
             >
               {label}

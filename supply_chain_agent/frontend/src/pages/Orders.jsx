@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react"
-import { PackageCheck, ShoppingCart, Truck } from "lucide-react"
+import { AlertTriangle, PackageCheck, ShoppingCart, Truck } from "lucide-react"
 import DataTable from "../components/shared/DataTable"
 import Badge from "../components/ui/Badge"
 import EmptyState from "../components/ui/EmptyState"
+import KPICard from "../components/ui/KPICard"
 import Modal from "../components/ui/Modal"
 import Spinner from "../components/ui/Spinner"
 import { useApi } from "../hooks/useApi"
@@ -102,25 +103,62 @@ export default function Orders() {
     }
   ]
 
+  const summaryCards = [
+    {
+      title: "Backlog",
+      value: model.summary.backlog_orders,
+      subtitle: "Open orders awaiting completion",
+      icon: ShoppingCart,
+      color: "bg-blue-100 text-blue-700",
+      cardClassName: "border-blue-200 bg-gradient-to-br from-blue-50 via-white to-white",
+      valueClassName: "text-blue-950"
+    },
+    {
+      title: "Delayed",
+      value: model.summary.delayed_orders,
+      subtitle: "Orders impacted by execution delays",
+      icon: Truck,
+      color: "bg-amber-100 text-amber-700",
+      cardClassName: "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white",
+      valueClassName: "text-amber-950"
+    },
+    {
+      title: "Critical",
+      value: model.summary.critical_orders,
+      subtitle: "High-risk commitments to review first",
+      icon: AlertTriangle,
+      color: "bg-rose-100 text-rose-700",
+      cardClassName: "border-rose-200 bg-gradient-to-br from-rose-50 via-white to-white",
+      valueClassName: "text-rose-950"
+    },
+    {
+      title: "Fill Rate",
+      value: `${Math.round(model.summary.average_fill_rate * 100)}%`,
+      subtitle: "Current fulfillment performance",
+      icon: PackageCheck,
+      color: "bg-emerald-100 text-emerald-700",
+      cardClassName: "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white",
+      valueClassName: "text-emerald-950"
+    }
+  ]
+
   return (
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-4">
-        {[
-          ["Backlog", model.summary.backlog_orders],
-          ["Delayed", model.summary.delayed_orders],
-          ["Critical", model.summary.critical_orders],
-          ["Fill Rate", `${Math.round(model.summary.average_fill_rate * 100)}%`]
-        ].map(([label, value]) => (
-          <div key={label} className="rounded-lg border bg-white p-4 shadow-card">
-            <p className="text-sm text-slate-500">{label}</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
+        {summaryCards.map((card) => (
+          <div key={card.title}>
+            <KPICard {...card} />
           </div>
         ))}
       </section>
 
-      <section className="rounded-lg border bg-white p-5 shadow-card">
+      <section className="rounded-lg border border-slate-200 bg-gradient-to-r from-white via-slate-50 to-blue-50/60 p-5 shadow-card">
         <div className="flex flex-wrap gap-3">
-          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="rounded-md border px-3 py-2.5 text-sm">
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            className="rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          >
             <option value="">All statuses</option>
             <option value="pending">Pending</option>
             <option value="allocated">Allocated</option>
@@ -128,7 +166,11 @@ export default function Orders() {
             <option value="shipped">Shipped</option>
             <option value="delayed">Delayed</option>
           </select>
-          <select value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)} className="rounded-md border px-3 py-2.5 text-sm">
+          <select
+            value={priorityFilter}
+            onChange={(event) => setPriorityFilter(event.target.value)}
+            className="rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+          >
             <option value="">All priorities</option>
             <option value="critical">Critical</option>
             <option value="high">High</option>

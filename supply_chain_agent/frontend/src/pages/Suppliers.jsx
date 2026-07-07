@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
-import { BarChart3, Download, Factory, RefreshCw, ShieldAlert } from "lucide-react"
+import { AlertTriangle, BarChart3, Download, Factory, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react"
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import DataTable from "../components/shared/DataTable"
 import Badge from "../components/ui/Badge"
@@ -18,11 +18,27 @@ import {
   statusLabel
 } from "../utils/formatters"
 
-function SupplierMetric({ label, value }) {
+function SupplierMetric({
+  label,
+  value,
+  icon: Icon,
+  cardClassName = "border-slate-200 bg-slate-50",
+  iconClassName = "bg-white text-slate-500",
+  valueClassName = "text-slate-900"
+}) {
   return (
-    <div className="rounded-lg bg-slate-50 p-4">
-      <p className="text-sm text-slate-500">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
+    <div className={`rounded-xl border p-4 shadow-card ${cardClassName}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-slate-500">{label}</p>
+          <p className={`mt-2 text-2xl font-semibold ${valueClassName}`}>{value}</p>
+        </div>
+        {Icon ? (
+          <div className={`rounded-xl p-2.5 shadow-sm ${iconClassName}`}>
+            <Icon className="h-4 w-4" />
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }
@@ -278,6 +294,60 @@ export default function Suppliers() {
     }
   ]
 
+  const summaryCards = [
+    {
+      label: "Total",
+      value: model?.stats.total ?? 0,
+      icon: Factory,
+      cardClassName: "border-sky-200 bg-gradient-to-br from-sky-50 via-white to-white",
+      iconClassName: "bg-sky-100 text-sky-700",
+      valueClassName: "text-sky-950"
+    },
+    {
+      label: "Active",
+      value: model?.stats.active ?? 0,
+      icon: ShieldCheck,
+      cardClassName: "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white",
+      iconClassName: "bg-emerald-100 text-emerald-700",
+      valueClassName: "text-emerald-950"
+    },
+    {
+      label: "At Risk",
+      value: model?.stats.atRisk ?? 0,
+      icon: BarChart3,
+      cardClassName: "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white",
+      iconClassName: "bg-amber-100 text-amber-700",
+      valueClassName: "text-amber-950"
+    },
+    {
+      label: "Critical",
+      value: model?.stats.critical ?? 0,
+      icon: AlertTriangle,
+      cardClassName: "border-rose-200 bg-gradient-to-br from-rose-50 via-white to-white",
+      iconClassName: "bg-rose-100 text-rose-700",
+      valueClassName: "text-rose-950"
+    }
+  ]
+
+  const detailTabStyles = {
+    overview: {
+      active: "bg-sky-600 text-white shadow-sm shadow-sky-200",
+      inactive: "bg-sky-50 text-sky-700 hover:bg-sky-100"
+    },
+    shipments: {
+      active: "bg-blue-600 text-white shadow-sm shadow-blue-200",
+      inactive: "bg-blue-50 text-blue-700 hover:bg-blue-100"
+    },
+    trend: {
+      active: "bg-amber-500 text-white shadow-sm shadow-amber-200",
+      inactive: "bg-amber-50 text-amber-700 hover:bg-amber-100"
+    },
+    alternates: {
+      active: "bg-emerald-600 text-white shadow-sm shadow-emerald-200",
+      inactive: "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+    }
+  }
+
   return (
     <div className="space-y-6">
       {affectedSupplierIds.length || supplierContextLabel ? (
@@ -302,14 +372,7 @@ export default function Suppliers() {
 
       <section className="grid gap-4 md:grid-cols-4">
         {model
-          ? [
-              ["Total", model.stats.total],
-              ["Active", model.stats.active],
-              ["At Risk", model.stats.atRisk],
-              ["Critical", model.stats.critical]
-            ].map(([label, value]) => (
-              <SupplierMetric key={label} label={label} value={value} />
-            ))
+          ? summaryCards.map((card) => <SupplierMetric key={card.label} {...card} />)
           : Array.from({ length: 4 }, (_, index) => <div key={index} className="h-28 animate-pulse rounded-lg border bg-white" />)}
       </section>
 
@@ -372,8 +435,8 @@ export default function Suppliers() {
                   key={tab}
                   type="button"
                   onClick={() => setActiveTab(tab)}
-                  className={`rounded-full px-4 py-2 text-sm font-medium ${
-                    activeTab === tab ? "bg-primary text-white" : "bg-slate-100 text-slate-600"
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    activeTab === tab ? detailTabStyles[tab].active : detailTabStyles[tab].inactive
                   }`}
                 >
                   {statusLabel(tab)}
@@ -384,10 +447,38 @@ export default function Suppliers() {
             {activeTab === "overview" ? (
               <div className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-4">
-                  <SupplierMetric label="Risk score" value={selectedSupplier.risk_score.toFixed(1)} />
-                  <SupplierMetric label="On-time rate" value={formatPercent(selectedSupplier.on_time_delivery_rate)} />
-                  <SupplierMetric label="Defect rate" value={formatPercent(selectedSupplier.defect_rate)} />
-                  <SupplierMetric label="Lead time" value={`${selectedSupplier.avg_lead_time_days} days`} />
+                  <SupplierMetric
+                    label="Risk score"
+                    value={selectedSupplier.risk_score.toFixed(1)}
+                    icon={AlertTriangle}
+                    cardClassName="border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white"
+                    iconClassName="bg-amber-100 text-amber-700"
+                    valueClassName="text-amber-950"
+                  />
+                  <SupplierMetric
+                    label="On-time rate"
+                    value={formatPercent(selectedSupplier.on_time_delivery_rate)}
+                    icon={ShieldCheck}
+                    cardClassName="border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white"
+                    iconClassName="bg-emerald-100 text-emerald-700"
+                    valueClassName="text-emerald-950"
+                  />
+                  <SupplierMetric
+                    label="Defect rate"
+                    value={formatPercent(selectedSupplier.defect_rate)}
+                    icon={BarChart3}
+                    cardClassName="border-rose-200 bg-gradient-to-br from-rose-50 via-white to-white"
+                    iconClassName="bg-rose-100 text-rose-700"
+                    valueClassName="text-rose-950"
+                  />
+                  <SupplierMetric
+                    label="Lead time"
+                    value={`${selectedSupplier.avg_lead_time_days} days`}
+                    icon={RefreshCw}
+                    cardClassName="border-blue-200 bg-gradient-to-br from-blue-50 via-white to-white"
+                    iconClassName="bg-blue-100 text-blue-700"
+                    valueClassName="text-blue-950"
+                  />
                 </div>
                 <div className="rounded-lg border bg-slate-50 p-5">
                   <div className="mb-3 flex items-center gap-2">

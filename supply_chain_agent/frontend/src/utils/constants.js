@@ -25,6 +25,7 @@ export const STATUS_COLORS = {
 export const ROUTE_TITLES = {
   "/dashboard": "Dashboard",
   "/war-room": "War Room",
+  "/simulator": "What-If Simulator",
   "/map": "Supply Chain Map",
   "/support": "Support Tickets",
   "/orders": "Orders",

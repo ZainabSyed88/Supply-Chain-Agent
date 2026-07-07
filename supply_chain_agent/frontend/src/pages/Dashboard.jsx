@@ -35,8 +35,9 @@ import {
   formatNumber,
   formatPercent,
   getCountryFlag,
-  riskColor
+  getShipmentDelayDays
 } from "../utils/formatters"
+import { getSupplierRiskThresholds } from "../utils/riskThresholds"
 import { demandData, inventoryData, shipmentStatusData } from "../utils/mockData"
 
 const chartColors = {
@@ -126,7 +127,19 @@ function CompactKpiCard({
   )
 }
 
-function MiniRiskRow({ supplier }) {
+function getRiskBarColor(score, thresholds) {
+  if (score >= thresholds.critical) return chartColors.red
+  if (score >= thresholds.atRisk) return chartColors.amber
+  return chartColors.green
+}
+
+function getRiskTextClass(score, thresholds) {
+  if (score >= thresholds.critical) return "text-red-600"
+  if (score >= thresholds.atRisk) return "text-amber-600"
+  return "text-emerald-600"
+}
+
+function MiniRiskRow({ supplier, thresholds }) {
   return (
     <div className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
       <div className="flex items-center justify-between gap-3">
@@ -134,15 +147,14 @@ function MiniRiskRow({ supplier }) {
           <p className="truncate text-sm font-medium text-slate-900">{supplier.name}</p>
           <p className="text-xs text-slate-500">{supplier.country}</p>
         </div>
-        <span className={`text-sm font-semibold ${riskColor(supplier.risk_score)}`}>{Math.round(supplier.risk_score)}</span>
+        <span className={`text-sm font-semibold ${getRiskTextClass(supplier.risk_score, thresholds)}`}>{Math.round(supplier.risk_score)}</span>
       </div>
       <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-200">
         <div
           className="h-full rounded-full transition-[width] duration-1000 ease-out"
           style={{
             width: `${supplier.risk_score}%`,
-            backgroundColor:
-              supplier.risk_score > 80 ? chartColors.red : supplier.risk_score > 65 ? chartColors.amber : chartColors.green
+            backgroundColor: getRiskBarColor(supplier.risk_score, thresholds)
           }}
         />
       </div>
@@ -214,15 +226,15 @@ function LoadingDashboard() {
   )
 }
 
-function supplierStatus(score) {
-  if (score > 80) return "Critical"
-  if (score > 65) return "At Risk"
+function supplierStatus(score, thresholds) {
+  if (score >= thresholds.critical) return "Critical"
+  if (score >= thresholds.atRisk) return "At Risk"
   return "Monitor"
 }
 
-function supplierStatusClass(score) {
-  if (score > 80) return "bg-rose-50 text-rose-700"
-  if (score > 65) return "bg-amber-50 text-amber-700"
+function supplierStatusClass(score, thresholds) {
+  if (score >= thresholds.critical) return "bg-rose-50 text-rose-700"
+  if (score >= thresholds.atRisk) return "bg-amber-50 text-amber-700"
   return "bg-blue-50 text-blue-700"
 }
 
@@ -252,16 +264,17 @@ export default function Dashboard() {
     const shipments = data.shipments || []
     const disruptions = data.disruptions || []
     const inventory = data.inventory || []
+    const riskThresholds = getSupplierRiskThresholds(suppliers, data.kpis || {})
 
-    const atRiskSuppliers = suppliers.filter((supplier) => supplier.risk_score > 65)
-    const criticalSuppliers = suppliers.filter((supplier) => supplier.risk_score > 80)
+    const atRiskSuppliers = suppliers.filter((supplier) => supplier.risk_score >= riskThresholds.atRisk)
+    const criticalSuppliers = suppliers.filter((supplier) => supplier.risk_score >= riskThresholds.critical)
     const delayedShipments = shipments.filter((shipment) => shipment.status === "delayed")
     const atRiskShipments = shipments.filter((shipment) => shipment.status === "at_risk")
     const impactedShipments = shipments.filter((shipment) => ["delayed", "at_risk"].includes(shipment.status))
     const revenueAtRisk = impactedShipments.reduce((sum, shipment) => sum + shipment.value_usd, 0)
     const totalShipmentValue = shipments.reduce((sum, shipment) => sum + shipment.value_usd, 0)
     const avgDelayDays = delayedShipments.length
-      ? delayedShipments.reduce((sum, shipment) => sum + shipment.delay_days, 0) / delayedShipments.length
+      ? delayedShipments.reduce((sum, shipment) => sum + getShipmentDelayDays(shipment), 0) / delayedShipments.length
       : 0
     const criticalDisruptions = disruptions.filter((item) => item.severity === "critical").length
     const avgRiskScore = Number(data.kpis?.average_supplier_risk || 0)
@@ -322,6 +335,9 @@ export default function Dashboard() {
       forecastStart,
       topSuppliers,
       topRiskList,
+      riskThresholds,
+      atRiskSupplierCount: Number(data.kpis?.at_risk_suppliers ?? atRiskSuppliers.length),
+      criticalSupplierCount: Number(data.kpis?.critical_suppliers ?? criticalSuppliers.length),
       totalSuppliers: Number(data.kpis?.total_suppliers || suppliers.length || 25),
       activeDisruptions: Number(data.kpis?.active_disruptions || disruptions.length || 0),
       delayedShipmentCount: Number(data.kpis?.delayed_shipments || delayedShipments.length || 0)
@@ -368,10 +384,10 @@ export default function Dashboard() {
           iconColor="text-rose-600"
           label="Need attention"
           helper="High-risk vendors"
-          value={model.atRiskSuppliers.length}
-          trend={`${model.criticalSuppliers.length} critical`}
-          trendTone={model.atRiskSuppliers.length > 0 ? "danger" : "success"}
-          borderTone={model.atRiskSuppliers.length > 0 ? "border-b-rose-500" : "border-b-emerald-500"}
+          value={model.atRiskSupplierCount}
+          trend={`${model.criticalSupplierCount} critical`}
+          trendTone={model.atRiskSupplierCount > 0 ? "danger" : "success"}
+          borderTone={model.atRiskSupplierCount > 0 ? "border-b-rose-500" : "border-b-emerald-500"}
           onClick={() => navigate("/suppliers", { state: { riskFilter: "high" } })}
         />
         <CompactKpiCard
@@ -514,7 +530,7 @@ export default function Dashboard() {
           <RiskGauge score={model.avgRiskScore || 65} />
           <div className="mt-5 space-y-3">
             {model.topRiskList.map((supplier) => (
-              <MiniRiskRow key={supplier.supplier_id} supplier={supplier} />
+              <MiniRiskRow key={supplier.supplier_id} supplier={supplier} thresholds={model.riskThresholds} />
             ))}
           </div>
         </DashboardCard>
@@ -619,7 +635,7 @@ export default function Dashboard() {
                   </div>
                   <div className="text-slate-600">{supplier.country}</div>
                   <div className="flex items-center gap-2">
-                    <div className={`w-10 text-sm font-bold ${riskColor(supplier.risk_score)}`}>
+                    <div className={`w-10 text-sm font-bold ${getRiskTextClass(supplier.risk_score, model.riskThresholds)}`}>
                       {Math.round(supplier.risk_score)}
                     </div>
                     <div className="h-1.5 flex-1 rounded-full bg-slate-100">
@@ -627,8 +643,7 @@ export default function Dashboard() {
                         className="h-full rounded-full transition-[width] duration-1000 ease-out"
                         style={{
                           width: `${supplier.risk_score}%`,
-                          background:
-                            supplier.risk_score > 80 ? chartColors.red : supplier.risk_score > 65 ? chartColors.amber : chartColors.green
+                          background: getRiskBarColor(supplier.risk_score, model.riskThresholds)
                         }}
                       />
                     </div>
@@ -637,8 +652,8 @@ export default function Dashboard() {
                     {formatPercent(supplier.on_time_delivery_rate)}
                   </div>
                   <div>
-                    <span className={`rounded-full px-2 py-1 text-xs font-medium ${supplierStatusClass(supplier.risk_score)}`}>
-                      {supplierStatus(supplier.risk_score)}
+                    <span className={`rounded-full px-2 py-1 text-xs font-medium ${supplierStatusClass(supplier.risk_score, model.riskThresholds)}`}>
+                      {supplierStatus(supplier.risk_score, model.riskThresholds)}
                     </span>
                   </div>
                   <button

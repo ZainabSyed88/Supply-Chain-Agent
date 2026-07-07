@@ -4,7 +4,10 @@ import {
   AlertTriangle,
   ArrowDown,
   Bot,
+  CheckCircle2,
+  Clock3,
   Factory,
+  LoaderCircle,
   Send,
   ShieldCheck,
   Sparkles,
@@ -45,31 +48,209 @@ const backendAgents = new Set([
   "stakeholder_notification"
 ])
 
+function formatAgentName(value) {
+  if (!value) return ""
+  return value
+    .split("_")
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ")
+}
+
+function tierGridClass(length) {
+  if (length >= 4) return "sm:grid-cols-2 2xl:grid-cols-4"
+  if (length === 3) return "sm:grid-cols-2 xl:grid-cols-3"
+  if (length === 2) return "lg:grid-cols-2"
+  return ""
+}
+
+function formatDuration(ms) {
+  if (ms === null || ms === undefined || Number.isNaN(ms)) return "--"
+  if (ms >= 1000) return `${(ms / 1000).toFixed(2)}s`
+  return `${Math.round(ms)}ms`
+}
+
+function getConfidenceStyles(confidence) {
+  if (typeof confidence !== "number") {
+    return {
+      pill: "border-slate-200 bg-slate-50 text-slate-500",
+      bar: "bg-slate-300",
+      label: "Confidence pending"
+    }
+  }
+  if (confidence >= 90) {
+    return {
+      pill: "border-emerald-200 bg-emerald-50 text-emerald-700",
+      bar: "bg-emerald-500",
+      label: `${confidence}% confidence`
+    }
+  }
+  if (confidence >= 80) {
+    return {
+      pill: "border-amber-200 bg-amber-50 text-amber-700",
+      bar: "bg-amber-500",
+      label: `${confidence}% confidence`
+    }
+  }
+  return {
+    pill: "border-rose-200 bg-rose-50 text-rose-700",
+    bar: "bg-rose-500",
+    label: `${confidence}% confidence`
+  }
+}
+
+function buildTimelineRows(agentTimes, agentStates) {
+  const tierStarts = []
+  let elapsed = 0
+
+  AGENT_TIERS.forEach((tier, tierIndex) => {
+    tierStarts[tierIndex] = elapsed
+    const tierDuration = Math.max(...tier.map((agent) => Number(agentTimes[agent.id] || agentStates[agent.id]?.durationMs || 0)), 0)
+    elapsed += tierDuration
+  })
+
+  const rows = AGENT_TIERS.flatMap((tier, tierIndex) =>
+    tier.map((agent) => {
+      const durationMs = Number(agentTimes[agent.id] || agentStates[agent.id]?.durationMs || 0)
+      const startMs = tierStarts[tierIndex]
+      return {
+        ...agent,
+        tier: tierIndex + 1,
+        startMs,
+        durationMs,
+        endMs: startMs + durationMs,
+        state: agentStates[agent.id] || { status: "idle" }
+      }
+    })
+  )
+
+  const sequentialDurationMs = rows.reduce((sum, row) => sum + row.durationMs, 0)
+  const derivedActualDurationMs = rows.length ? Math.max(...rows.map((row) => row.endMs), 0) : 0
+
+  return {
+    rows,
+    derivedActualDurationMs,
+    sequentialDurationMs
+  }
+}
+
 function AgentNode({ agent, state }) {
   const Icon = iconMap[agent.icon] || Bot
   const status = state?.status || (backendAgents.has(agent.id) ? "idle" : "idle")
+  const confidenceStyles = getConfidenceStyles(state?.confidence)
+  const statusMeta = {
+    idle: {
+      card: "border-slate-200 bg-white text-slate-600",
+      iconWrap: "bg-slate-100 text-slate-500",
+      accent: "bg-slate-300",
+      badgeLabel: backendAgents.has(agent.id) ? "Pending" : "Standby",
+      badgeVariant: "info",
+      helper: "Awaiting execution",
+      statusIcon: Clock3,
+      statusIconClass: "text-slate-400"
+    },
+    running: {
+      card: "border-blue-200 bg-gradient-to-br from-blue-50/80 to-white text-slate-700 ring-1 ring-blue-100",
+      iconWrap: "bg-blue-100 text-blue-700",
+      accent: "bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-500",
+      badgeLabel: "Running",
+      badgeVariant: "low",
+      helper: "Currently processing",
+      statusIcon: LoaderCircle,
+      statusIconClass: "animate-spin text-blue-600"
+    },
+    completed: {
+      card: "border-emerald-200 bg-gradient-to-br from-emerald-50/80 to-white text-emerald-700",
+      iconWrap: "bg-emerald-100 text-emerald-700",
+      accent: "bg-emerald-500",
+      badgeLabel: "Complete",
+      badgeVariant: "success",
+      helper: "Execution finished",
+      statusIcon: CheckCircle2,
+      statusIconClass: "text-emerald-600"
+    },
+    failed: {
+      card: "border-red-200 bg-gradient-to-br from-red-50/80 to-white text-red-700",
+      iconWrap: "bg-red-100 text-red-700",
+      accent: "bg-red-500",
+      badgeLabel: "Failed",
+      badgeVariant: "critical",
+      helper: "Needs attention",
+      statusIcon: AlertTriangle,
+      statusIconClass: "text-red-600"
+    }
+  }[status] || {
+    card: "border-slate-200 bg-white text-slate-600",
+    iconWrap: "bg-slate-100 text-slate-500",
+    accent: "bg-slate-300",
+    badgeLabel: "Pending",
+    badgeVariant: "info",
+    helper: "Awaiting execution",
+    statusIcon: Clock3,
+    statusIconClass: "text-slate-400"
+  }
+  const StatusIcon = statusMeta.statusIcon
+  const progressWidth = status === "completed" ? "100%" : status === "failed" ? "100%" : status === "running" ? "68%" : "18%"
+  const durationLabel = state?.durationMs ? `${(state.durationMs / 1000).toFixed(1)}s` : "Awaiting execution"
+
   return (
     <div
       className={clsx(
-        "rounded-xl border bg-white p-4 shadow-card transition",
-        status === "running" && "border-primary text-primary shadow-md animate-pulseRing",
-        status === "completed" && "border-emerald-200 text-emerald-700",
-        status === "failed" && "border-red-200 text-red-700",
-        status === "idle" && "text-slate-500"
+        "group flex h-full min-h-[210px] flex-col rounded-2xl border p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md",
+        statusMeta.card
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className={clsx("rounded-lg p-3", status === "completed" ? "bg-emerald-50" : status === "failed" ? "bg-red-50" : status === "running" ? "bg-blue-50" : "bg-slate-100")}>
+      <div className="flex items-start justify-between gap-4">
+        <div className={clsx("flex h-12 w-12 items-center justify-center rounded-2xl", statusMeta.iconWrap)}>
           <Icon className="h-5 w-5" />
         </div>
-        <Badge
-          label={status === "completed" ? "Complete" : status === "failed" ? "Failed" : status === "running" ? "Running" : backendAgents.has(agent.id) ? "Idle" : "Standby"}
-          variant={status === "completed" ? "success" : status === "failed" ? "critical" : status === "running" ? "low" : "info"}
-        />
+        <div className="flex items-center gap-2">
+          <StatusIcon className={clsx("h-4 w-4 shrink-0", statusMeta.statusIconClass)} />
+          <Badge label={statusMeta.badgeLabel} variant={statusMeta.badgeVariant} />
+        </div>
       </div>
-      <h3 className="mt-4 font-semibold">{agent.label}</h3>
-      {state?.durationMs ? <p className="mt-2 text-sm">{(state.durationMs / 1000).toFixed(1)}s</p> : <p className="mt-2 text-sm">Awaiting execution</p>}
-      {state?.confidence ? <p className="mt-1 text-xs text-slate-500">Confidence {state.confidence}%</p> : null}
+      <div className="mt-4 space-y-3">
+        <div>
+          <h3 className="font-semibold text-slate-900">{agent.label}</h3>
+          <p className="mt-1 text-sm text-slate-500">{statusMeta.helper}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 font-medium text-slate-600">
+            {durationLabel}
+          </span>
+          {typeof state?.confidence === "number" ? (
+            <span className={clsx("rounded-full border px-2.5 py-1 font-medium", confidenceStyles.pill)}>
+              {confidenceStyles.label}
+            </span>
+          ) : null}
+        </div>
+        {typeof state?.confidence === "number" ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-[0.16em] text-slate-400">
+              <span>Execution confidence</span>
+              <span>{state.confidence}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className={clsx("h-full rounded-full transition-all duration-500", confidenceStyles.bar)} style={{ width: `${state.confidence}%` }} />
+            </div>
+          </div>
+        ) : null}
+      </div>
+      <div className="mt-auto pt-5">
+        <div className="flex items-center justify-between gap-3 text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+          <span>{status === "running" ? "Live execution" : status === "completed" ? "Finished" : status === "failed" ? "Error state" : "Queued"}</span>
+          <span>{status === "running" ? "In progress" : status === "completed" ? "100%" : status === "failed" ? "Blocked" : "Ready"}</span>
+        </div>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div
+            className={clsx(
+              "h-full rounded-full transition-all duration-500",
+              statusMeta.accent,
+              status === "running" && "animate-pulse"
+            )}
+            style={{ width: progressWidth }}
+          />
+        </div>
+      </div>
     </div>
   )
 }
@@ -116,51 +297,84 @@ export default function WarRoom() {
       })),
     [pipeline.performanceData]
   )
+  const timeline = useMemo(
+    () => buildTimelineRows(pipeline.agentTimes, pipeline.agentStates),
+    [pipeline.agentStates, pipeline.agentTimes]
+  )
+  const timelineTotalMs = Math.max(pipeline.durationMs || 0, timeline.derivedActualDurationMs || 0, 1)
+  const sequentialDurationMs = pipeline.sequentialDurationMs || timeline.sequentialDurationMs
+  const parallelGainMs = pipeline.potentialParallelGainMs ?? Math.max(0, sequentialDurationMs - timelineTotalMs)
+  const longestAgent = useMemo(
+    () => [...timeline.rows].sort((left, right) => right.durationMs - left.durationMs)[0] || null,
+    [timeline.rows]
+  )
 
   return (
     <div className="space-y-6">
-      <section className="rounded-lg border bg-white p-5 shadow-card">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-3">
+      <section className="rounded-2xl border bg-white p-5 shadow-sm sm:p-6">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+          <div className="space-y-4">
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
                 onClick={() => pipeline.trigger()}
-                className="rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark"
+                className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-dark hover:shadow-md"
               >
                 Run Pipeline
               </button>
-              <Badge label={pipeline.status === "idle" ? "Idle" : pipeline.status.charAt(0).toUpperCase() + pipeline.status.slice(1)} variant={pipeline.status === "completed" ? "success" : pipeline.status === "failed" ? "critical" : pipeline.status === "running" || pipeline.status === "starting" ? "low" : "info"} />
-              {pipeline.currentAgent ? <p className="text-sm text-slate-500">Current agent: {pipeline.currentAgent}</p> : null}
+              <div className="inline-flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                <Badge
+                  label={pipeline.status === "idle" ? "Idle" : pipeline.status.charAt(0).toUpperCase() + pipeline.status.slice(1)}
+                  variant={pipeline.status === "completed" ? "success" : pipeline.status === "failed" ? "critical" : pipeline.status === "running" || pipeline.status === "starting" ? "low" : "info"}
+                />
+                <span className="text-sm text-slate-500">
+                  {pipeline.currentAgent ? `Current agent: ${formatAgentName(pipeline.currentAgent)}` : "Pipeline ready to run"}
+                </span>
+              </div>
             </div>
-            <div className="h-3 w-full rounded-full bg-slate-100">
-              <div className="h-3 rounded-full bg-primary transition-all" style={{ width: `${pipeline.progress}%` }} />
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Execution progress</p>
+                  <p className="mt-1 text-sm text-slate-500">Track the live backend run as each pipeline agent advances to completion.</p>
+                </div>
+                <span className="shrink-0 text-sm font-semibold text-slate-900">{Math.round(pipeline.progress)}%</span>
+              </div>
+              <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+                <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${pipeline.progress}%` }} />
+              </div>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-slate-500">Total duration</p>
-            <p className="text-2xl font-semibold text-slate-900">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 xl:min-w-[13rem]">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Total duration</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">
               {pipeline.durationMs ? `${(pipeline.durationMs / 1000).toFixed(2)}s` : pipeline.status === "running" ? "Running..." : "--"}
             </p>
+            <p className="mt-1 text-sm text-slate-500">Updated from the active pipeline stream.</p>
           </div>
         </div>
       </section>
 
-      <section className="rounded-lg border bg-white p-5 shadow-card">
-        <div className="mb-5">
-          <h2 className="text-lg font-semibold text-slate-900">Agent Tier Visualizer</h2>
-          <p className="text-sm text-slate-500">Live execution flow for the five backend pipeline agents running in today&apos;s demo.</p>
+      <section className="rounded-2xl border bg-white p-5 shadow-sm sm:p-6">
+        <div className="mb-6 border-b border-slate-200 pb-5">
+          <div className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Execution map
+          </div>
+          <h2 className="mt-3 text-lg font-semibold text-slate-900 sm:text-xl">Agent Tier Visualizer</h2>
+          <p className="mt-1 max-w-2xl text-sm text-slate-500">
+            Live execution flow for the five backend pipeline agents running in today&apos;s demo.
+          </p>
         </div>
-        <div className="space-y-5">
+        <div className="space-y-6">
           {AGENT_TIERS.map((tier, index) => (
-            <div key={index}>
-              <div className={clsx("grid gap-4", tier.length === 4 ? "md:grid-cols-4" : tier.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2")}>
+            <div key={index} className="space-y-4">
+              <div className={clsx("grid gap-4", tierGridClass(tier.length))}>
                 {tier.map((agent) => (
                   <AgentNode key={agent.id} agent={agent} state={pipeline.agentStates[agent.id]} />
                 ))}
               </div>
               {index < AGENT_TIERS.length - 1 ? (
-                <div className="flex justify-center py-2 text-slate-300">
+                <div className="flex justify-center py-1 text-slate-300">
                   <ArrowDown className="h-5 w-5" />
                 </div>
               ) : null}
@@ -230,6 +444,138 @@ export default function WarRoom() {
             </div>
           )}
         </div>
+      </section>
+
+      <section className="rounded-2xl border bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Execution timeline
+            </div>
+            <h2 className="mt-3 text-lg font-semibold text-slate-900 sm:text-xl">Gantt-style agent timing</h2>
+            <p className="mt-1 max-w-2xl text-sm text-slate-500">
+              Each bar shows when an agent ran in the pipeline, including parallel work across tiers 1 and 2.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Actual wall clock</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">{formatDuration(timelineTotalMs)}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Sequential total</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">{formatDuration(sequentialDurationMs)}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Parallel time saved</p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">{formatDuration(parallelGainMs)}</p>
+            </div>
+          </div>
+        </div>
+
+        {!timeline.rows.some((row) => row.durationMs > 0 || row.state.status === "running" || row.state.status === "completed" || row.state.status === "failed") ? (
+          <div className="mt-6">
+            <EmptyState
+              icon={Clock3}
+              title="No execution timeline yet"
+              description="Run the pipeline to populate a timing view for each agent and show how parallel tiers compress the overall wall-clock duration."
+            />
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+              {longestAgent ? (
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 font-medium">
+                  Longest agent: {longestAgent.label} ({formatDuration(longestAgent.durationMs)})
+                </span>
+              ) : null}
+              {pipeline.completedAt ? (
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 font-medium">
+                  Completed at {new Date(pipeline.completedAt).toLocaleTimeString()}
+                </span>
+              ) : null}
+            </div>
+
+            <div className="rounded-2xl border border-slate-200">
+              <div className="grid grid-cols-[180px_minmax(0,1fr)] gap-4 border-b border-slate-200 bg-slate-50 px-4 py-3">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Agent</div>
+                <div className="grid grid-cols-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  {Array.from({ length: 5 }).map((_, index) => {
+                    const tickMs = (timelineTotalMs / 4) * index
+                    return (
+                      <span key={index} className={clsx(index === 4 ? "text-right" : "text-left")}>
+                        {formatDuration(tickMs)}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {timeline.rows.map((row) => {
+                  const left = `${(row.startMs / timelineTotalMs) * 100}%`
+                  const rawWidth = row.durationMs > 0 ? (row.durationMs / timelineTotalMs) * 100 : row.state.status === "running" ? 12 : 0
+                  const clampedWidth = Math.max(0, Math.min(100 - (row.startMs / timelineTotalMs) * 100, row.durationMs > 0 ? Math.max(8, rawWidth) : rawWidth))
+                  const width = `${clampedWidth}%`
+                  const confidenceStyles = getConfidenceStyles(row.state.confidence)
+                  const barTone =
+                    row.state.status === "failed"
+                      ? "from-rose-500 to-red-500"
+                      : row.state.status === "completed"
+                        ? "from-sky-500 via-blue-500 to-indigo-500"
+                        : row.state.status === "running"
+                          ? "from-cyan-400 via-sky-500 to-blue-500"
+                          : "from-slate-200 to-slate-300"
+
+                  return (
+                    <div key={row.id} className="grid grid-cols-[180px_minmax(0,1fr)] gap-4 px-4 py-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-semibold text-slate-900">{row.label}</p>
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                            Tier {row.tier}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                          <span>{formatDuration(row.durationMs)}</span>
+                          {typeof row.state.confidence === "number" ? (
+                            <span className={clsx("rounded-full border px-2 py-0.5 font-medium", confidenceStyles.pill)}>
+                              {row.state.confidence}% confidence
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="relative min-h-[56px] overflow-hidden rounded-2xl bg-slate-50">
+                        <div className="absolute inset-0 grid grid-cols-5">
+                          {Array.from({ length: 5 }).map((_, index) => (
+                            <div key={index} className={clsx("border-slate-200", index < 4 && "border-r")} />
+                          ))}
+                        </div>
+                        {row.durationMs > 0 || row.state.status === "running" ? (
+                          <div
+                            className={clsx(
+                              "absolute top-1/2 flex h-9 -translate-y-1/2 items-center rounded-xl bg-gradient-to-r px-3 text-xs font-semibold text-white shadow-sm transition-all duration-500",
+                              barTone,
+                              row.state.status === "running" && "animate-pulse"
+                            )}
+                            style={{ left, width }}
+                          >
+                            <span className="truncate">
+                              {formatDuration(row.startMs)} {"->"} {formatDuration(row.startMs + row.durationMs)}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="absolute inset-y-0 left-3 flex items-center text-xs text-slate-400">Pending</div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   )

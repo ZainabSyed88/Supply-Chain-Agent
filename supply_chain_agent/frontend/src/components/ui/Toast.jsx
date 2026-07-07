@@ -18,9 +18,13 @@ export function ToastProvider({ children }) {
     setToasts((prev) => prev.filter((toast) => toast.id !== id))
   }, [])
 
-  const showToast = useCallback((message, type = "info") => {
+  const showToast = useCallback((content, type = "info") => {
     const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`
-    setToasts((prev) => [...prev, { id, message, type }])
+    const normalized =
+      typeof content === "string"
+        ? { id, title: content, message: "" }
+        : { id, title: content?.title || "Notification", message: content?.message || "" }
+    setToasts((prev) => [...prev, { ...normalized, type }])
     window.setTimeout(() => {
       setToasts((prev) => prev.filter((toast) => toast.id !== id))
     }, 5000)
@@ -41,7 +45,10 @@ export function ToastProvider({ children }) {
             )}
           >
             <div className="flex items-start justify-between gap-4">
-              <p className="text-sm font-medium">{toast.message}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{toast.title}</p>
+                {toast.message ? <p className="mt-1 text-sm text-current/80">{toast.message}</p> : null}
+              </div>
               <button type="button" onClick={() => dismissToast(toast.id)} className="text-current/70 hover:text-current">
                 <X className="h-4 w-4" />
               </button>

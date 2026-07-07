@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react"
-import { Headset, LifeBuoy, Send, ShieldCheck } from "lucide-react"
+import { AlertTriangle, Headset, LifeBuoy, Send, ShieldCheck } from "lucide-react"
 import { useOutletContext } from "react-router-dom"
 import DataTable from "../components/shared/DataTable"
 import Badge from "../components/ui/Badge"
 import EmptyState from "../components/ui/EmptyState"
+import KPICard from "../components/ui/KPICard"
 import Modal from "../components/ui/Modal"
 import Spinner from "../components/ui/Spinner"
 import { useToast } from "../components/ui/Toast"
@@ -135,25 +136,51 @@ export default function Support() {
     }
   ]
 
+  const summaryCards = [
+    {
+      title: "My Open Tickets",
+      value: model.open,
+      subtitle: "Issues currently waiting on action",
+      icon: Headset,
+      color: "bg-sky-100 text-sky-700",
+      cardClassName: "border-sky-200 bg-gradient-to-br from-sky-50 via-white to-white",
+      valueClassName: "text-sky-950"
+    },
+    {
+      title: "In Progress",
+      value: model.inProgress,
+      subtitle: "Tickets being handled by the team",
+      icon: LifeBuoy,
+      color: "bg-amber-100 text-amber-700",
+      cardClassName: "border-amber-200 bg-gradient-to-br from-amber-50 via-white to-white",
+      valueClassName: "text-amber-950"
+    },
+    {
+      title: "Resolved",
+      value: model.resolved,
+      subtitle: "Closed or resolved support cases",
+      icon: ShieldCheck,
+      color: "bg-emerald-100 text-emerald-700",
+      cardClassName: "border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white",
+      valueClassName: "text-emerald-950"
+    },
+    {
+      title: "Recent Alerts",
+      value: alerts.length,
+      subtitle: "Live system alerts that may drive tickets",
+      icon: AlertTriangle,
+      color: "bg-rose-100 text-rose-700",
+      cardClassName: "border-rose-200 bg-gradient-to-br from-rose-50 via-white to-white",
+      valueClassName: "text-rose-950"
+    }
+  ]
+
   return (
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-4">
-        <div className="rounded-lg border bg-white p-4 shadow-card">
-          <p className="text-sm text-slate-500">My Open Tickets</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">{model.open}</p>
-        </div>
-        <div className="rounded-lg border bg-white p-4 shadow-card">
-          <p className="text-sm text-slate-500">In Progress</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">{model.inProgress}</p>
-        </div>
-        <div className="rounded-lg border bg-white p-4 shadow-card">
-          <p className="text-sm text-slate-500">Resolved</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">{model.resolved}</p>
-        </div>
-        <div className="rounded-lg border bg-white p-4 shadow-card">
-          <p className="text-sm text-slate-500">Recent Alerts</p>
-          <p className="mt-2 text-2xl font-semibold text-slate-900">{alerts.length}</p>
-        </div>
+        {summaryCards.map((card) => (
+          <KPICard key={card.title} {...card} />
+        ))}
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1fr,1.1fr]">

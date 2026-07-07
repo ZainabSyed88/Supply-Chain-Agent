@@ -138,6 +138,22 @@ class DataService:
             results = [disruption for disruption in results if disruption.estimated_resolution >= now]
         return results
 
+    @lru_cache(maxsize=8)
+    def get_supplier_risk_thresholds(self) -> dict[str, float]:
+        scores = sorted(supplier.risk_score for supplier in self._suppliers)
+        if not scores:
+            return {"at_risk": 15.0, "critical": 16.0}
+
+        average_score = sum(scores) / len(scores)
+        at_risk_threshold = round(max(15.0, average_score), 1)
+        percentile_index = max(0, math.ceil(len(scores) * 0.9) - 1)
+        critical_candidate = max(at_risk_threshold + 1.0, scores[percentile_index])
+        critical_threshold = round(min(scores[-1], critical_candidate), 1)
+        return {
+            "at_risk": at_risk_threshold,
+            "critical": critical_threshold,
+        }
+
     @lru_cache(maxsize=32)
     def get_kpis(self) -> dict[str, float | int]:
         total_suppliers = len(self._suppliers)
@@ -145,18 +161,25 @@ class DataService:
         delayed_shipments = len(self.get_shipments(status="delayed"))
         critical_disruptions = len(self.get_disruptions(severity="critical", active_only=True))
         avg_risk_score = round(sum(s.risk_score for s in self._suppliers) / max(total_suppliers, 1), 2)
+        risk_thresholds = self.get_supplier_risk_thresholds()
         total_value = round(sum(s.value_usd for s in self._shipments), 2)
         open_orders = len([order for order in self._orders if order.status in {"pending", "allocated", "processing", "delayed"}])
         warehouse_utilization = round(
             sum(warehouse.utilization_rate for warehouse in self._warehouses) / max(len(self._warehouses), 1),
             2,
         )
+        at_risk_suppliers = len([supplier for supplier in self._suppliers if supplier.risk_score >= risk_thresholds["at_risk"]])
+        critical_suppliers = len([supplier for supplier in self._suppliers if supplier.risk_score >= risk_thresholds["critical"]])
         return {
             "total_suppliers": total_suppliers,
             "active_disruptions": active_disruptions,
             "delayed_shipments": delayed_shipments,
             "critical_disruptions": critical_disruptions,
             "average_supplier_risk": avg_risk_score,
+            "risk_alert_threshold": risk_thresholds["at_risk"],
+            "risk_critical_threshold": risk_thresholds["critical"],
+            "at_risk_suppliers": at_risk_suppliers,
+            "critical_suppliers": critical_suppliers,
             "total_shipment_value_usd": total_value,
             "open_orders": open_orders,
             "warehouse_utilization_rate": warehouse_utilization,
