@@ -221,6 +221,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload)
     }),
+  forgotPassword: (payload) =>
+    request("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  resetPassword: (payload) =>
+    request("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
   listUsers: () => request("/auth/users"),
   updateUserRole: (userId, role) =>
     request(`/auth/users/${userId}/role`, {

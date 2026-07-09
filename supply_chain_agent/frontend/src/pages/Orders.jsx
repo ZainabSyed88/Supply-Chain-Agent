@@ -154,29 +154,35 @@ export default function Orders() {
 
       <section className="rounded-lg border border-slate-200 bg-gradient-to-r from-white via-slate-50 to-blue-50/60 p-5 shadow-card">
         <div className="flex flex-wrap gap-3">
-          <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-            className="rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="allocated">Allocated</option>
-            <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
-            <option value="delayed">Delayed</option>
-          </select>
-          <select
-            value={priorityFilter}
-            onChange={(event) => setPriorityFilter(event.target.value)}
-            className="rounded-md border border-slate-200 bg-white px-3 py-2.5 text-sm shadow-sm outline-none transition focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
-          >
-            <option value="">All priorities</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
+          <label className="min-w-[12rem] rounded-2xl border border-sky-200 bg-[linear-gradient(135deg,rgba(224,242,254,0.85),rgba(255,255,255,0.98))] px-3 py-2 shadow-sm">
+            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-600">Status Filter</span>
+            <select
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+              className="w-full bg-transparent text-sm font-medium text-slate-700 outline-none"
+            >
+              <option value="">All statuses</option>
+              <option value="pending">Pending</option>
+              <option value="allocated">Allocated</option>
+              <option value="processing">Processing</option>
+              <option value="shipped">Shipped</option>
+              <option value="delayed">Delayed</option>
+            </select>
+          </label>
+          <label className="min-w-[12rem] rounded-2xl border border-violet-200 bg-[linear-gradient(135deg,rgba(243,232,255,0.88),rgba(255,255,255,0.98))] px-3 py-2 shadow-sm">
+            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-600">Priority Filter</span>
+            <select
+              value={priorityFilter}
+              onChange={(event) => setPriorityFilter(event.target.value)}
+              className="w-full bg-transparent text-sm font-medium text-slate-700 outline-none"
+            >
+              <option value="">All priorities</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </label>
         </div>
       </section>
 

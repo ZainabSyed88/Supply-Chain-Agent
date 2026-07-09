@@ -103,6 +103,16 @@ function getFilteredSuppliers(filter, suppliers, thresholds) {
   return suppliers
 }
 
+function getFilteredDisruptions(filter, disruptions) {
+  if (filter === "critical") {
+    return disruptions.filter((disruption) => disruption.severity === "critical")
+  }
+  if (filter === "at_risk") {
+    return disruptions.filter((disruption) => ["medium", "high", "critical"].includes(disruption.severity))
+  }
+  return disruptions
+}
+
 function MapBridge({ onReady }) {
   const map = useMap()
 
@@ -493,6 +503,7 @@ export default function SupplyChainMap() {
     const shipments = data?.shipments || []
     const disruptions = data?.disruptions || []
     const riskThresholds = getSupplierRiskThresholds(suppliers)
+    const filteredDisruptions = getFilteredDisruptions(filter, disruptions)
 
     return {
       suppliers,
@@ -500,9 +511,18 @@ export default function SupplyChainMap() {
       shipments,
       riskThresholds,
       filteredSuppliers: getFilteredSuppliers(filter, suppliers, riskThresholds),
+      filteredDisruptions,
       delayedCount: shipments.filter((shipment) => shipment.status === "delayed").length
     }
   }, [data, filter])
+
+  useEffect(() => {
+    if (!selectedDisruptionId) return
+    const isVisible = model.filteredDisruptions.some((disruption) => disruption.disruption_id === selectedDisruptionId)
+    if (!isVisible) {
+      setSelectedDisruptionId(null)
+    }
+  }, [model.filteredDisruptions, selectedDisruptionId])
 
   function setMapInstance(map) {
     mapRef.current = map
@@ -567,7 +587,7 @@ export default function SupplyChainMap() {
         <div className="border-b border-slate-100 p-4">
           <div className="grid grid-cols-2 gap-2">
             <StatPill icon={Building2} label="Suppliers" value={model.suppliers.length} tone="blue" />
-            <StatPill icon={AlertTriangle} label="Disruptions" value={model.disruptions.length} tone="red" />
+            <StatPill icon={AlertTriangle} label="Disruptions" value={model.filteredDisruptions.length} tone="red" />
             <StatPill icon={Ship} label="Shipments" value={model.shipments.length} tone="blue" />
             <StatPill icon={Truck} label="Delayed" value={model.delayedCount} tone="amber" />
           </div>
@@ -598,20 +618,26 @@ export default function SupplyChainMap() {
             <h3 className="text-sm font-semibold text-slate-800">
               Active Disruptions
               <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-700">
-                {model.disruptions.length}
+                {model.filteredDisruptions.length}
               </span>
             </h3>
           </div>
 
           <div className="space-y-2 p-3">
-            {model.disruptions.map((disruption) => (
-              <DisruptionCard
-                key={disruption.disruption_id}
-                disruption={disruption}
-                isSelected={selectedDisruptionId === disruption.disruption_id}
-                onClick={() => focusDisruption(disruption)}
-              />
-            ))}
+            {model.filteredDisruptions.length ? (
+              model.filteredDisruptions.map((disruption) => (
+                <DisruptionCard
+                  key={disruption.disruption_id}
+                  disruption={disruption}
+                  isSelected={selectedDisruptionId === disruption.disruption_id}
+                  onClick={() => focusDisruption(disruption)}
+                />
+              ))
+            ) : (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                No disruptions match the selected filter.
+              </div>
+            )}
           </div>
 
           <div className="border-y border-slate-100 px-4 py-3">
@@ -636,7 +662,7 @@ export default function SupplyChainMap() {
           {[
             { key: "suppliers", label: "Suppliers", icon: Building2, count: model.filteredSuppliers.length },
             { key: "routes", label: "Routes", icon: Anchor, count: model.shipments.length },
-            { key: "disruptions", label: "Disruptions", icon: AlertTriangle, count: model.disruptions.length }
+            { key: "disruptions", label: "Disruptions", icon: AlertTriangle, count: model.filteredDisruptions.length }
           ].map((layer) => (
             <button
               key={layer.key}
@@ -756,7 +782,7 @@ export default function SupplyChainMap() {
               ))}
 
             {layers.disruptions &&
-              model.disruptions.map((disruption) => (
+              model.filteredDisruptions.map((disruption) => (
                 <DisruptionZone
                   key={disruption.disruption_id}
                   disruption={disruption}

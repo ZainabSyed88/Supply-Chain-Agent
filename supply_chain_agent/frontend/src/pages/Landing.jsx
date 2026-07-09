@@ -936,7 +936,7 @@ export default function Landing() {
           <SectionHeading
             eyebrow="Platform intelligence"
             title="An enterprise-grade control tower built for disruption response"
-            description="Every surface is designed to feel like a command system, not a generic marketing site â€” from multi-agent orchestration to board-ready financial visibility."
+            description="Every surface is designed to feel like a command system, not a generic marketing site - from multi-agent orchestration to board-ready financial visibility."
           />
 
           <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -1073,7 +1073,7 @@ export default function Landing() {
             {testimonials.map((item, index) => (
               <motion.div key={item.name} custom={index} variants={cardReveal} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }}>
                 <GlassCard className="h-full">
-                  <p className="text-base leading-8 text-slate-200">â€œ{item.quote}â€</p>
+                  <p className="text-base leading-8 text-slate-200">"{item.quote}"</p>
                   <div className="mt-8 flex items-center gap-4">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400/20 to-violet-500/20 text-sm font-semibold text-white">
                       {item.name
@@ -1084,7 +1084,7 @@ export default function Landing() {
                     <div>
                       <p className="font-semibold text-white">{item.name}</p>
                       <p className="text-sm text-slate-400">
-                        {item.title} Â· {item.company}
+                        {item.title} - {item.company}
                       </p>
                     </div>
                   </div>

@@ -90,13 +90,18 @@ def get_user_by_email(db: Session, email: str) -> User | None:
     return db.query(User).filter(User.email == email.lower()).first()
 
 
-def authenticate_user(db: Session, username_or_email: str, password: str) -> User | None:
-    normalized = username_or_email.strip().lower()
-    user = (
+def get_user_by_identifier(db: Session, identifier: str) -> User | None:
+    normalized_identifier = identifier.strip()
+    normalized_email = normalized_identifier.lower()
+    return (
         db.query(User)
-        .filter(or_(User.username == username_or_email.strip(), User.email == normalized))
+        .filter(or_(User.username == normalized_identifier, User.email == normalized_email))
         .first()
     )
+
+
+def authenticate_user(db: Session, username_or_email: str, password: str) -> User | None:
+    user = get_user_by_identifier(db, username_or_email)
     if user is None or not verify_password(password, user.hashed_password):
         return None
     return user

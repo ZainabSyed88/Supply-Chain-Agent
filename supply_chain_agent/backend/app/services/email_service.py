@@ -72,6 +72,25 @@ def pipeline_complete_email_template(
     """
 
 
+def password_reset_email_template(*, user_name: str, reset_code: str) -> str:
+    return f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; background:#f8fafc; padding:32px;">
+        <div style="max-width:600px; margin:0 auto; background:#ffffff; border-radius:16px; padding:32px;">
+          <p style="margin:0 0 8px; color:#94a3b8; text-transform:uppercase; font-size:12px;">Password reset</p>
+          <h1 style="margin:0 0 16px; color:#0f172a;">Your ChainPulse reset code</h1>
+          <p style="color:#475569; line-height:1.6;">Hi {user_name}, use the verification code below to reset your password.</p>
+          <div style="margin:24px 0; padding:18px 20px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:14px; font-size:28px; font-weight:700; letter-spacing:6px; text-align:center; color:#1d4ed8;">
+            {reset_code}
+          </div>
+          <p style="color:#475569; line-height:1.6;">This code expires in 15 minutes. If you did not request a reset, you can ignore this email.</p>
+          <a href="{settings.frontend_url}/login" style="display:inline-block; margin-top:16px; background:#1d4ed8; color:#fff; padding:12px 20px; border-radius:10px; text-decoration:none;">Return to sign in</a>
+        </div>
+      </body>
+    </html>
+    """
+
+
 def alert_email_template(*, user_name: str, alert_title: str, alert_message: str, severity: str) -> str:
     return f"""
     <html>

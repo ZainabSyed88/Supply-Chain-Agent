@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime
+import secrets
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -17,14 +18,17 @@ from app.services.auth_service import (
     create_user,
     decode_token,
     get_current_active_user,
+    get_user_by_identifier,
     get_user_by_id,
     hash_password,
     require_admin,
     verify_password,
 )
-from app.services.email_service import send_email, welcome_email_template
+from app.services.email_service import password_reset_email_template, send_email, welcome_email_template
 
 router = APIRouter()
+PASSWORD_RESET_CODES: dict[str, tuple[str, datetime]] = {}
+RESET_CODE_TTL_MINUTES = 15
 
 
 class RegisterRequest(BaseModel):
@@ -57,6 +61,17 @@ class ChangePasswordRequest(BaseModel):
     new_password: str = Field(min_length=8, max_length=100)
 
 
+class ForgotPasswordRequest(BaseModel):
+    identifier: str = Field(min_length=3, max_length=120)
+
+
+class ResetPasswordRequest(BaseModel):
+    identifier: str = Field(min_length=3, max_length=120)
+    reset_code: str = Field(min_length=6, max_length=6)
+    new_password: str = Field(min_length=8, max_length=100)
+    confirm_password: str | None = Field(default=None, min_length=8, max_length=100)
+
+
 class RoleUpdateRequest(BaseModel):
     role: UserRole
 
@@ -75,6 +90,17 @@ def serialize_user(user: User) -> dict:
         "created_at": user.created_at.isoformat() if user.created_at else None,
         "last_login": user.last_login.isoformat() if user.last_login else None,
     }
+
+
+def _prune_expired_reset_codes() -> None:
+    now = datetime.utcnow()
+    expired_user_ids = [user_id for user_id, (_, expires_at) in PASSWORD_RESET_CODES.items() if expires_at <= now]
+    for user_id in expired_user_ids:
+        PASSWORD_RESET_CODES.pop(user_id, None)
+
+
+def _generate_reset_code() -> str:
+    return f"{secrets.randbelow(1_000_000):06d}"
 
 
 @router.post("/register", status_code=201)
@@ -172,6 +198,63 @@ async def change_password(
     current_user.hashed_password = hash_password(body.new_password)
     db.commit()
     return {"message": "Password changed successfully"}
+
+
+@router.post("/forgot-password")
+async def forgot_password(body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    _prune_expired_reset_codes()
+    user = get_user_by_identifier(db, body.identifier)
+    generic_message = "If an account exists for that username or email, a reset code has been prepared."
+
+    if user is None or not user.is_active:
+        return {"message": generic_message}
+
+    reset_code = _generate_reset_code()
+    expires_at = datetime.utcnow() + timedelta(minutes=RESET_CODE_TTL_MINUTES)
+    PASSWORD_RESET_CODES[user.id] = (reset_code, expires_at)
+
+    email_sent = await send_email(
+        to_email=user.email,
+        subject="ChainPulse password reset code",
+        html_body=password_reset_email_template(user_name=user.full_name, reset_code=reset_code),
+    )
+
+    response = {
+        "message": generic_message,
+        "delivery": "email" if email_sent else "preview",
+        "expires_at": expires_at.isoformat() + "Z",
+    }
+    if not email_sent:
+        response["reset_code"] = reset_code
+    return response
+
+
+@router.post("/reset-password")
+async def reset_password(body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    _prune_expired_reset_codes()
+
+    if body.confirm_password is not None and body.new_password != body.confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
+
+    user = get_user_by_identifier(db, body.identifier)
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=400, detail="Invalid reset request")
+
+    reset_record = PASSWORD_RESET_CODES.get(user.id)
+    if reset_record is None:
+        raise HTTPException(status_code=400, detail="Reset code not found or expired")
+
+    expected_code, expires_at = reset_record
+    if expires_at <= datetime.utcnow():
+        PASSWORD_RESET_CODES.pop(user.id, None)
+        raise HTTPException(status_code=400, detail="Reset code not found or expired")
+    if body.reset_code.strip() != expected_code:
+        raise HTTPException(status_code=400, detail="Reset code is incorrect")
+
+    user.hashed_password = hash_password(body.new_password)
+    db.commit()
+    PASSWORD_RESET_CODES.pop(user.id, None)
+    return {"message": "Password reset successfully. Sign in with your new password."}
 
 
 @router.post("/signout")
