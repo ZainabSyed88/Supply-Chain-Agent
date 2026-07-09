@@ -4,6 +4,8 @@ ChainPulse is an AI-powered supply chain control tower built for disruption moni
 
 This repository contains the current product app inside `supply_chain_agent/`, along with generated runtime logs in `output/`.
 
+Demo Video Link:- https://youtu.be/oxGudyGUjsU?si=_8S1S4ZZ21_4Gyn9
+
 ## Main App
 
 The active application lives in:
