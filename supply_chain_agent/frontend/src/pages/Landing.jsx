@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
+import ChainPulseLogo from "../components/branding/ChainPulseLogo"
 import ProductDemo from "../components/ProductDemo"
 import { useAuth } from "../hooks/useAuth"
 
@@ -723,15 +724,7 @@ export default function Landing() {
           className="sticky top-4 z-40 rounded-[28px] border border-white/12 bg-white/[0.08] px-5 py-4 shadow-[0_20px_60px_rgba(0,0,0,0.35)] backdrop-blur-[30px]"
         >
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-violet-500 shadow-[0_12px_30px_rgba(59,130,246,0.45)]">
-                <Zap className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-lg font-semibold">ChainPulse</p>
-                <p className="text-sm text-slate-300">Supply Chain Disruption Agent</p>
-              </div>
-            </div>
+            <ChainPulseLogo theme="dark" subtitle="Supply Chain Disruption Agent" />
 
             <nav className="hidden items-center gap-6 lg:flex">
               {navItems.map((item) => (
@@ -786,8 +779,18 @@ export default function Landing() {
             </div>
 
             <div className="max-w-3xl">
+              <ChainPulseLogo
+                theme="dark"
+                layout="stacked"
+                showTagline
+                className="items-start text-left"
+                markClassName="h-20 w-20 sm:h-24 sm:w-24"
+                nameClassName="text-4xl sm:text-5xl"
+                metaClassName="text-cyan-100/75"
+              />
               <h1 className="text-5xl font-semibold leading-[0.95] tracking-[-0.04em] text-white md:text-7xl">
-                Supply Chain Intelligence
+                <span className="sr-only">ChainPulse</span>
+                <span className="mt-8 block">Supply Chain Intelligence</span>
                 <span className="mt-2 block bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400 bg-clip-text text-transparent">
                   Powered by AI Agents
                 </span>
@@ -1260,10 +1263,11 @@ export default function Landing() {
 
         <footer className="pb-6 pt-10">
           <div className="flex flex-col gap-4 border-t border-white/10 pt-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="font-semibold text-white">ChainPulse</p>
-              <p className="mt-1 text-sm text-slate-500">Supply Chain Disruption Agent for enterprise resilience teams.</p>
-            </div>
+            <ChainPulseLogo
+              theme="dark"
+              subtitle="Supply Chain Disruption Agent for enterprise resilience teams."
+              metaClassName="text-slate-400"
+            />
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-slate-400">
               {navItems.map((item) => (

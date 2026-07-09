@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound, Users, Zap } from "lucide-react"
+import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, UserRound, Users } from "lucide-react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
+import ChainPulseLogo from "../components/branding/ChainPulseLogo"
 import { useAuth } from "../hooks/useAuth"
 import { useToast } from "../components/ui/Toast"
 import { api } from "../utils/api"
@@ -206,14 +207,8 @@ export default function Auth() {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.09),_transparent_30%),linear-gradient(180deg,_#ffffff,_#eff6ff)] px-6 py-8">
       <div className="mx-auto max-w-6xl">
         <header className="flex items-center justify-between rounded-2xl border bg-white/90 px-5 py-4 backdrop-blur">
-          <Link to="/" className="flex items-center gap-3">
-            <div className="rounded-xl bg-primary p-2 text-white">
-              <Zap className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="font-semibold text-slate-900">ChainPulse</p>
-              <p className="text-sm text-slate-500">Secure access for supply chain teams</p>
-            </div>
+          <Link to="/" className="min-w-0">
+            <ChainPulseLogo subtitle="Secure access for supply chain teams" />
           </Link>
           <Link to="/" className="text-sm font-medium text-slate-600 transition hover:text-slate-900">
             Back to website

@@ -10,11 +10,11 @@ import {
   ShieldCheck,
   Sparkles,
   TriangleAlert,
-  Truck,
-  Zap
+  Truck
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Link } from "react-router-dom"
+import ChainPulseLogo from "./branding/ChainPulseLogo"
 
 const SCENES = [
   {
@@ -230,17 +230,17 @@ function Scene2() {
     <div className="grid h-full items-center gap-6 px-5 py-5 md:grid-cols-[0.95fr,1.05fr] md:px-8">
       <div className="relative mx-auto flex max-w-sm flex-col items-center text-center" style={{ animation: "demoScaleIn 0.5s both" }}>
         <div className="absolute inset-0 rounded-full bg-cyan-400/20 blur-3xl" />
-        <div
-          className="relative flex h-20 w-20 items-center justify-center rounded-[28px] border border-cyan-300/20 bg-gradient-to-br from-cyan-400 to-blue-600 shadow-[0_20px_50px_rgba(59,130,246,0.35)] sm:h-24 sm:w-24"
-          style={{ animation: "demoGlow 2.2s infinite" }}
-        >
-          <Zap className="h-8 w-8 text-white sm:h-9 sm:w-9" />
-        </div>
+        <ChainPulseLogo
+          theme="dark"
+          layout="stacked"
+          className="relative gap-3"
+          markClassName="drop-shadow-[0_20px_50px_rgba(59,130,246,0.35)]"
+          nameClassName="text-2xl sm:text-3xl"
+        />
         <div className="relative mt-4 flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1.5 text-xs text-cyan-100 sm:mt-5 sm:px-4 sm:py-2 sm:text-sm">
           <BrainCircuit className="h-4 w-4" />
           AI detection engine online
         </div>
-        <h4 className="relative mt-3 text-2xl font-semibold text-white sm:mt-4 sm:text-3xl">ChainPulse</h4>
         <p className="relative mt-2 max-w-xs text-sm leading-6 text-slate-300">Signals converge from news, weather, carriers, and suppliers in seconds.</p>
       </div>
 

@@ -13,10 +13,10 @@ import {
   Play,
   ShieldCheck,
   Sparkles,
-  X,
-  Zap
+  X
 } from "lucide-react"
 import clsx from "clsx"
+import ChainPulseLogo from "../branding/ChainPulseLogo"
 import StatusDot from "../ui/StatusDot"
 import { useLocalization } from "../../context/LocalizationContext"
 import { formatRelativeTime } from "../../utils/formatters"
@@ -188,15 +188,13 @@ export default function Sidebar({ mobileOpen, onClose, pipelineSummary, onRunPip
         )}
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 p-2.5 text-white shadow-[0_14px_30px_rgba(59,130,246,0.22)]">
-              <Zap className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-base font-semibold text-slate-900">ChainPulse</p>
-              <p className="text-xs text-slate-500">{t("sidebar.tagline")}</p>
-            </div>
-          </div>
+          <ChainPulseLogo
+            className="min-w-0"
+            markClassName="h-12 w-12"
+            nameClassName="text-base"
+            metaClassName="text-xs"
+            subtitle={t("sidebar.tagline")}
+          />
           <button type="button" onClick={onClose} className="rounded-md p-2 text-slate-500 hover:bg-slate-100 md:hidden">
             <X className="h-5 w-5" />
           </button>
