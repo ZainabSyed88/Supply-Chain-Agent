@@ -5,6 +5,7 @@ ChainPulse is an AI-powered supply chain control tower built for disruption moni
 This repository contains the current product app inside `supply_chain_agent/`, along with generated runtime logs in `output/`.
 
 Demo Video Link:- https://youtu.be/oxGudyGUjsU?si=_8S1S4ZZ21_4Gyn9
+App Link:- https://chainpulseapp.vercel.app/
 
 ## Main App
 
